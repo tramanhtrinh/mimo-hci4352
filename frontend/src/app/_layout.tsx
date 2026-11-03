@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { Palette } from '@/constants/theme';
+import { PetProvider } from '@/state/pet';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,7 +31,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={theme}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Palette.paper } }} />
+      <PetProvider>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Palette.paper } }} />
+      </PetProvider>
     </ThemeProvider>
   );
 }

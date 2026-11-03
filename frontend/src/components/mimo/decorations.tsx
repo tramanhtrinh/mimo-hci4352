@@ -3,12 +3,12 @@ import Svg, { Path } from 'react-native-svg';
 import { Palette } from '@/constants/theme';
 
 /** Four-point sparkle used as a small accent. */
-export function Sparkle({ size = 20 }: { size?: number }) {
+export function Sparkle({ size = 20, color = Palette.ink }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path
         d="M12 0 C13 8 16 11 24 12 C16 13 13 16 12 24 C11 16 8 13 0 12 C8 11 11 8 12 0 Z"
-        fill={Palette.ink}
+        fill={color}
       />
     </Svg>
   );

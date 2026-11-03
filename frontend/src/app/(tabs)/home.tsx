@@ -6,20 +6,13 @@ import Svg, { Path } from 'react-native-svg';
 import { Sparkle } from '@/components/mimo/decorations';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
+import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
-
-// Placeholder data until goals and pet stats come from real state.
-const PET = { name: 'Mimo', level: 3, stage: 'Sprout', streakDays: 3, sparks: 120 };
-const STATS = [
-  { label: 'HAPPINESS', value: 0.8 },
-  { label: 'ENERGY', value: 0.65 },
-];
-const GOALS = [
-  { id: 'scroll', title: 'Reduce bedtime scrolling by 10m', done: true, progress: 1 },
-  { id: 'dinner', title: 'Stay phone-free during dinner', done: false, progress: 0.4 },
-];
+import { bearMood, type Goal, usePet } from '@/state/pet';
 
 export default function HomeScreen() {
+  const { goals, message } = usePet();
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -36,41 +29,47 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.goals}>
-          {GOALS.map((goal) => (
-            <GoalRow key={goal.id} {...goal} />
+          {goals.map((goal) => (
+            <GoalRow key={goal.id} goal={goal} />
           ))}
         </View>
+        {message && <Text style={styles.message}>{message}</Text>}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 function Header() {
+  const { name, streakDays, stats } = usePet();
+
   return (
     <View style={styles.header}>
       <View style={styles.avatar}>
-        <MimoCharacter size={32} />
+        <MimoCharacter size={32} mood={bearMood(stats)} />
       </View>
       <View style={styles.headerText}>
-        <Text style={styles.petName}>{PET.name}</Text>
-        <Text style={styles.streak}>mindful streak: {PET.streakDays} days</Text>
+        <Text style={styles.petName}>{name}</Text>
+        <Text style={styles.streak}>mindful streak: {streakDays} days</Text>
       </View>
-      <View style={styles.sparksPill}>
-        <Sparkle size={12} />
-        <Text style={styles.sparksText}>{PET.sparks} sparks</Text>
-      </View>
+      <SparksPill />
     </View>
   );
 }
 
 function PetCard() {
+  const { name, level, stage, stats } = usePet();
+  const shownStats = [
+    { label: 'HAPPINESS', value: stats.mood },
+    { label: 'ENERGY', value: stats.energy },
+  ];
+
   return (
     <View style={styles.card}>
       <View style={styles.cardSparkle}>
         <Sparkle size={18} />
       </View>
       <Link href="/pet" asChild>
-        <Pressable style={styles.arrowButton} accessibilityLabel={`Visit ${PET.name}`} hitSlop={8}>
+        <Pressable style={styles.arrowButton} accessibilityLabel={`Visit ${name}`} hitSlop={8}>
           <Svg width={16} height={16} viewBox="0 0 16 16">
             <Path d="M6 3 L11 8 L6 13" fill="none" stroke={Palette.white} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
@@ -79,24 +78,24 @@ function PetCard() {
 
       <View style={styles.petRing}>
         <View style={styles.petCircle}>
-          <MimoCharacter size={130} />
+          <MimoCharacter size={130} mood={bearMood(stats)} />
         </View>
       </View>
 
       <View style={styles.levelPill}>
         <Text style={styles.levelText}>
-          {PET.name} · Level {PET.level} {PET.stage}
+          {name} · Level {level} {stage}
         </Text>
       </View>
 
       <View style={styles.stats}>
-        {STATS.map((stat) => (
+        {shownStats.map((stat) => (
           <View key={stat.label} style={styles.stat}>
             <View style={styles.statLabels}>
               <Text style={styles.statLabel}>{stat.label}</Text>
-              <Text style={styles.statLabel}>{Math.round(stat.value * 100)}%</Text>
+              <Text style={styles.statLabel}>{stat.value}%</Text>
             </View>
-            <HatchedProgress value={stat.value} duration={900} />
+            <HatchedProgress value={stat.value / 100} duration={900} />
           </View>
         ))}
       </View>
@@ -104,25 +103,38 @@ function PetCard() {
   );
 }
 
-function GoalRow({ title, done, progress }: (typeof GOALS)[number]) {
+function GoalRow({ goal }: { goal: Goal }) {
+  const { completeGoal } = usePet();
+  const { title, done, progress, reward } = goal;
+
   return (
     <View style={styles.goal}>
       <View style={styles.goalTop}>
-        <View style={[styles.check, done && styles.checkDone]}>
+        <Pressable
+          onPress={() => completeGoal(goal.id)}
+          disabled={done}
+          role="checkbox"
+          aria-checked={done}
+          accessibilityLabel={`Mark "${title}" complete`}
+          hitSlop={8}
+          style={[styles.check, done && styles.checkDone]}>
           {done && (
             <Svg width={14} height={14} viewBox="0 0 14 14">
               <Path d="M2.5 7.2 L5.7 10 L11.5 4" fill="none" stroke={Palette.white} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
             </Svg>
           )}
+        </Pressable>
+        <View style={styles.goalText}>
+          <Text style={styles.goalTitle}>{title}</Text>
+          {!done && <Text style={styles.goalReward}>+{reward} sparks for Mimo</Text>}
         </View>
-        <Text style={styles.goalTitle}>{title}</Text>
         <View style={[styles.status, done && styles.statusDone]}>
           <Text style={[styles.statusText, done && styles.statusTextDone]}>
             {done ? 'Completed ✓' : 'In progress'}
           </Text>
         </View>
       </View>
-      {!done && (
+      {!done && progress > 0 && (
         <View style={styles.goalProgress}>
           <HatchedProgress value={progress} duration={900} />
         </View>
@@ -173,22 +185,6 @@ const styles = StyleSheet.create({
     fontFamily: HandFonts.regular,
     fontSize: 15,
     color: Palette.muted,
-  },
-  sparksPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Palette.ink,
-    backgroundColor: Palette.white,
-  },
-  sparksText: {
-    fontFamily: HandFonts.bold,
-    fontSize: 15,
-    color: Palette.ink,
   },
 
   card: {
@@ -311,8 +307,21 @@ const styles = StyleSheet.create({
   checkDone: {
     backgroundColor: Palette.ink,
   },
-  goalTitle: {
+  goalText: {
     flex: 1,
+  },
+  goalReward: {
+    fontFamily: HandFonts.regular,
+    fontSize: 14,
+    color: Palette.muted,
+  },
+  message: {
+    textAlign: 'center',
+    fontFamily: HandFonts.bold,
+    fontSize: 16,
+    color: Palette.ink,
+  },
+  goalTitle: {
     fontFamily: HandFonts.bold,
     fontSize: 17,
     lineHeight: 20,
