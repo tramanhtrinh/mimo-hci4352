@@ -1,4 +1,4 @@
-import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
+import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 
 import { Palette } from '@/constants/theme';
 
@@ -6,41 +6,12 @@ type Props = {
   size?: number;
 };
 
-/**
- * The mimo bear sitting inside its hand-drawn frame: a dashed outer outline,
- * a solid tilted blob and a soft gray shadow behind the character.
- */
-export function MimoBear({ size = 320 }: Props) {
-  const stroke = { stroke: Palette.ink, strokeWidth: 4, strokeLinejoin: 'round' as const };
+const stroke = { stroke: Palette.ink, strokeWidth: 4, strokeLinejoin: 'round' as const };
 
+/** The bear's shapes, drawn in a 320×320 coordinate space. */
+function BearShapes() {
   return (
-    <Svg width={size} height={size} viewBox="0 0 320 320">
-      {/* dashed outer outline */}
-      <Path
-        d="M40 78 C100 24 252 22 288 96 C314 156 294 246 232 282 C170 308 70 296 34 236 C8 186 10 106 40 78 Z"
-        fill="none"
-        stroke={Palette.muted}
-        strokeWidth={2}
-        strokeDasharray="6 6"
-        transform="rotate(6 160 160)"
-      />
-      {/* solid frame */}
-      <Path
-        d="M58 66 C120 34 232 34 266 76 C296 116 290 214 244 260 C202 296 112 296 62 254 C26 218 20 96 58 66 Z"
-        fill={Palette.paper}
-        transform="rotate(-8 160 160)"
-        {...stroke}
-      />
-      {/* soft shadow */}
-      <Ellipse
-        cx={164}
-        cy={168}
-        rx={118}
-        ry={88}
-        fill={Palette.shade}
-        transform="rotate(-32 164 168)"
-      />
-
+    <G>
       {/* ears, arms and feet sit behind the body so its outline covers the overlap */}
       <Circle cx={118} cy={96} r={22} fill={Palette.white} {...stroke} />
       <Circle cx={202} cy={96} r={22} fill={Palette.white} {...stroke} />
@@ -68,6 +39,52 @@ export function MimoBear({ size = 320 }: Props) {
         strokeWidth={3}
         strokeLinecap="round"
       />
+    </G>
+  );
+}
+
+/** Just the bear, cropped tight, for avatars and cards. */
+export function MimoCharacter({ size = 120 }: Props) {
+  return (
+    <Svg width={size} height={size} viewBox="70 60 180 205">
+      <BearShapes />
+    </Svg>
+  );
+}
+
+/**
+ * The mimo bear sitting inside its hand-drawn frame: a dashed outer outline,
+ * a solid tilted blob and a soft gray shadow behind the character.
+ */
+export function MimoBear({ size = 320 }: Props) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 320 320">
+      {/* dashed outer outline */}
+      <Path
+        d="M40 78 C100 24 252 22 288 96 C314 156 294 246 232 282 C170 308 70 296 34 236 C8 186 10 106 40 78 Z"
+        fill="none"
+        stroke={Palette.muted}
+        strokeWidth={2}
+        strokeDasharray="6 6"
+        transform="rotate(6 160 160)"
+      />
+      {/* solid frame */}
+      <Path
+        d="M58 66 C120 34 232 34 266 76 C296 116 290 214 244 260 C202 296 112 296 62 254 C26 218 20 96 58 66 Z"
+        fill={Palette.paper}
+        transform="rotate(-8 160 160)"
+        {...stroke}
+      />
+      {/* soft shadow */}
+      <Ellipse
+        cx={164}
+        cy={168}
+        rx={118}
+        ry={88}
+        fill={Palette.shade}
+        transform="rotate(-32 164 168)"
+      />
+      <BearShapes />
     </Svg>
   );
 }

@@ -5,25 +5,27 @@ import Svg, { Defs, Line, Pattern, Rect } from 'react-native-svg';
 import { Palette } from '@/constants/theme';
 
 type Props = {
+  /** How full the bar ends up, from 0 to 1. */
+  value?: number;
   /** How long the bar takes to fill, in milliseconds. */
   duration?: number;
   onComplete?: () => void;
 };
 
 /** A rounded loading bar filled with diagonal hatching, like a pen sketch. */
-export function HatchedProgress({ duration = 2800, onComplete }: Props) {
+export function HatchedProgress({ value = 1, duration = 2800, onComplete }: Props) {
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const animation = Animated.timing(progress, {
-      toValue: 1,
+      toValue: value,
       duration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     });
     animation.start(({ finished }) => finished && onComplete?.());
     return () => animation.stop();
-  }, [duration, onComplete, progress]);
+  }, [duration, onComplete, progress, value]);
 
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 

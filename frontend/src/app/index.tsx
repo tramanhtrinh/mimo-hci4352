@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import { useCallback } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,9 +8,11 @@ import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoBear } from '@/components/mimo/mimo-bear';
 import { HandFonts, Palette } from '@/constants/theme';
 
-/** Opening / loading screen. */
+/** Opening / loading screen. Moves on to Home once the bar fills. */
 export default function OpeningScreen() {
   const { width } = useWindowDimensions();
+  // `replace` so the back gesture from Home doesn't return to the loader.
+  const goHome = useCallback(() => router.replace('/home'), []);
   const contentWidth = Math.min(width, 430);
   const bearSize = Math.min(contentWidth - 48, 340);
 
@@ -31,7 +35,7 @@ export default function OpeningScreen() {
 
         <View style={[styles.loading, { width: bearSize * 0.82 }]}>
           <Text style={styles.loadingLabel}>loading . . .</Text>
-          <HatchedProgress />
+          <HatchedProgress onComplete={goHome} />
         </View>
       </SafeAreaView>
 
