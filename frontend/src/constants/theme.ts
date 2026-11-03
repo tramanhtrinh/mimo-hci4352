@@ -7,21 +7,35 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+/**
+ * mimo uses a deliberately minimal, hand-drawn palette: ink on paper plus a
+ * couple of soft grays. Every screen should pull colors from `Palette` only.
+ */
+export const Palette = {
+  ink: '#1A1A1A',
+  paper: '#F5F3EE',
+  white: '#FFFFFF',
+  shade: '#E0DFDB',
+  muted: '#8A8986',
+} as const;
+
+// Light and dark intentionally share the same palette so the look stays consistent.
+const scheme = {
+  text: Palette.ink,
+  background: Palette.paper,
+  backgroundElement: Palette.shade,
+  backgroundSelected: Palette.shade,
+  textSecondary: Palette.muted,
+} as const;
+
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  light: scheme,
+  dark: scheme,
+} as const;
+
+export const HandFonts = {
+  regular: 'Gaegu_400Regular',
+  bold: 'Gaegu_700Bold',
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;

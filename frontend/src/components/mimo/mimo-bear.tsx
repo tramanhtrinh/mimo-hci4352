@@ -1,0 +1,73 @@
+import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
+
+import { Palette } from '@/constants/theme';
+
+type Props = {
+  size?: number;
+};
+
+/**
+ * The mimo bear sitting inside its hand-drawn frame: a dashed outer outline,
+ * a solid tilted blob and a soft gray shadow behind the character.
+ */
+export function MimoBear({ size = 320 }: Props) {
+  const stroke = { stroke: Palette.ink, strokeWidth: 4, strokeLinejoin: 'round' as const };
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 320 320">
+      {/* dashed outer outline */}
+      <Path
+        d="M40 78 C100 24 252 22 288 96 C314 156 294 246 232 282 C170 308 70 296 34 236 C8 186 10 106 40 78 Z"
+        fill="none"
+        stroke={Palette.muted}
+        strokeWidth={2}
+        strokeDasharray="6 6"
+        transform="rotate(6 160 160)"
+      />
+      {/* solid frame */}
+      <Path
+        d="M58 66 C120 34 232 34 266 76 C296 116 290 214 244 260 C202 296 112 296 62 254 C26 218 20 96 58 66 Z"
+        fill={Palette.paper}
+        transform="rotate(-8 160 160)"
+        {...stroke}
+      />
+      {/* soft shadow */}
+      <Ellipse
+        cx={164}
+        cy={168}
+        rx={118}
+        ry={88}
+        fill={Palette.shade}
+        transform="rotate(-32 164 168)"
+      />
+
+      {/* ears, arms and feet sit behind the body so its outline covers the overlap */}
+      <Circle cx={118} cy={96} r={22} fill={Palette.white} {...stroke} />
+      <Circle cx={202} cy={96} r={22} fill={Palette.white} {...stroke} />
+      <Ellipse cx={100} cy={200} rx={12} ry={26} fill={Palette.white} transform="rotate(14 100 200)" {...stroke} />
+      <Ellipse cx={220} cy={200} rx={12} ry={26} fill={Palette.white} transform="rotate(-14 220 200)" {...stroke} />
+      <Ellipse cx={128} cy={246} rx={16} ry={13} fill={Palette.white} {...stroke} />
+      <Ellipse cx={192} cy={246} rx={16} ry={13} fill={Palette.white} {...stroke} />
+
+      {/* body */}
+      <Path
+        d="M160 80 C204 80 224 108 222 142 C220 166 228 192 225 216 C222 242 200 250 160 250 C120 250 98 242 95 216 C92 192 100 166 98 142 C96 108 116 80 160 80 Z"
+        fill={Palette.white}
+        {...stroke}
+      />
+
+      {/* face */}
+      <Ellipse cx={142} cy={136} rx={10} ry={13} fill={Palette.ink} />
+      <Ellipse cx={180} cy={136} rx={10} ry={13} fill={Palette.ink} />
+      <Circle cx={145} cy={131} r={3.5} fill={Palette.white} />
+      <Circle cx={183} cy={131} r={3.5} fill={Palette.white} />
+      <Path
+        d="M152 158 Q161 166 170 158"
+        fill="none"
+        stroke={Palette.ink}
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}

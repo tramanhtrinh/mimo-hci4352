@@ -7,3 +7,16 @@
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+/* Minimal mimo palette — keep in sync with `Palette` in constants/theme.ts */
+:root {
+  --color-ink: #1a1a1a;
+  --color-paper: #f5f3ee;
+  --color-white: #ffffff;
+  --color-shade: #e0dfdb;
+  --color-muted: #8a8986;
+}
+
+body {
+  background-color: var(--color-paper);
+}
