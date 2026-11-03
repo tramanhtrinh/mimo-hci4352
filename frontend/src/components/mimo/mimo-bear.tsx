@@ -2,7 +2,7 @@ import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 
 import { Palette } from '@/constants/theme';
 
-export type BearMood = 'joyful' | 'calm' | 'sad';
+export type BearMood = 'joyful' | 'calm' | 'sad' | 'sleepy';
 
 type Props = {
   size?: number;
@@ -46,6 +46,17 @@ function Face({ mood }: { mood: BearMood }) {
         <Path d="M132 138 Q142 124 152 138" {...line} />
         <Path d="M170 138 Q180 124 190 138" {...line} />
         <Path d="M148 156 Q161 170 174 156" {...line} />
+      </G>
+    );
+  }
+
+  if (mood === 'sleepy') {
+    // droopy closed eyes and a small yawn
+    return (
+      <G>
+        <Path d="M132 134 Q142 142 152 134" {...line} />
+        <Path d="M170 134 Q180 142 190 134" {...line} />
+        <Ellipse cx={161} cy={160} rx={5} ry={6} fill={Palette.ink} />
       </G>
     );
   }

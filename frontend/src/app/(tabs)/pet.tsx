@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { type ComponentType, useEffect, useRef } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +20,9 @@ import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
 import {
   bearMood,
+  currentNeed,
   describeStat,
+  levelFor,
   overallStatus,
   type Ritual,
   type RitualId,
@@ -37,13 +40,14 @@ const VITALS: { key: StatKey; label: string; Icon: IconComponent }[] = [
 ];
 
 const RITUAL_ICONS: Record<RitualId, IconComponent> = {
+  rest: ZzzIcon,
   feed: AppleIcon,
   play: BallIcon,
-  nap: ZzzIcon,
 };
 
 export default function PetScreen() {
-  const { name, level, stage } = usePet();
+  const { name, level, stage, xp, nextLevel } = usePet();
+  const growth = nextLevel ? (xp - levelFor(xp).xp) / (nextLevel.xp - levelFor(xp).xp) : 1;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -57,6 +61,12 @@ export default function PetScreen() {
           </View>
           <View style={styles.sparks}>
             <SparksPill />
+          </View>
+          <View style={styles.growth}>
+            <HatchedProgress value={growth} duration={900} />
+            <Text style={styles.growthText}>
+              {nextLevel ? `${nextLevel.xp - xp} growth to ${nextLevel.stage} · earned with phone-free time` : 'fully grown'}
+            </Text>
           </View>
         </View>
 
@@ -88,7 +98,7 @@ function InkBand() {
 }
 
 function PetPortrait() {
-  const { stats, interaction, doRitual } = usePet();
+  const { stats, interaction } = usePet();
   const bounce = useRef(new Animated.Value(1)).current;
 
   // Hop a little whenever Mimo is cared for.
@@ -109,26 +119,24 @@ function PetPortrait() {
         <Sparkle size={12} />
       </View>
       <View style={styles.ring}>
-        {/* tapping Mimo is a quick way to say hi: it counts as playing */}
-        <Pressable onPress={() => doRitual('play')} accessibilityLabel="Pet Mimo" style={styles.petCircle}>
+        <View style={styles.petCircle}>
           <Animated.View style={{ transform: [{ scale: bounce }] }}>
             <MimoCharacter size={140} mood={bearMood(stats)} />
           </Animated.View>
-        </Pressable>
+        </View>
       </View>
     </View>
   );
 }
 
+/** Mimo's latest reaction, or otherwise what it needs right now. */
 function ReactionBubble() {
-  const { message } = usePet();
+  const { message, stats } = usePet();
   return (
     <View style={styles.bubbleSlot}>
-      {message && (
-        <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>{message}</Text>
-        </View>
-      )}
+      <View style={styles.bubble}>
+        <Text style={styles.bubbleText}>{message ?? currentNeed(stats).says}</Text>
+      </View>
     </View>
   );
 }
@@ -157,7 +165,7 @@ function VitalHarmony() {
               <View style={styles.iconBadge}>
                 <Icon size={15} />
               </View>
-              <Text style={styles.vitalLabel}>
+              <Text style={styles.vitalLabel} numberOfLines={1}>
                 {label}: {describeStat(key, stats[key])}
               </Text>
               {!!delta && (
@@ -182,7 +190,7 @@ function CareRituals() {
   return (
     <View style={styles.rituals}>
       <Text style={styles.sectionTitle}>Care Rituals</Text>
-      <Text style={styles.sectionHint}>Spend time with Mimo to keep it thriving</Text>
+      <Text style={styles.sectionHint}>Phone-free time earns sparks. Spend them on Mimo.</Text>
       {RITUALS.map((ritual) => (
         <RitualCard key={ritual.id} ritual={ritual} />
       ))}
@@ -194,10 +202,11 @@ function RitualCard({ ritual }: { ritual: Ritual }) {
   const { doRitual, sparks } = usePet();
   const Icon = RITUAL_ICONS[ritual.id];
   const affordable = sparks >= ritual.cost;
+  const featured = ritual.id === 'rest';
 
   return (
     <Pressable
-      onPress={() => doRitual(ritual.id)}
+      onPress={() => (featured ? router.push('/focus') : doRitual(ritual.id))}
       accessibilityLabel={ritual.title}
       style={({ pressed }) => [styles.ritual, pressed && styles.ritualPressed]}>
       <View style={styles.ritualIcon}>
@@ -206,14 +215,16 @@ function RitualCard({ ritual }: { ritual: Ritual }) {
       <View style={styles.ritualBody}>
         <View style={styles.ritualTitleRow}>
           <Text style={styles.ritualTitle}>{ritual.title}</Text>
-          <View style={[styles.effectPill, ritual.id === 'nap' && styles.effectPillInk]}>
-            <Text style={[styles.effectText, ritual.id === 'nap' && styles.effectTextInk]}>{ritual.badge}</Text>
+          <View style={[styles.effectPill, featured && styles.effectPillInk]}>
+            <Text style={[styles.effectText, featured && styles.effectTextInk]}>{ritual.badge}</Text>
           </View>
         </View>
         <Text style={styles.ritualDescription}>{ritual.description}</Text>
         {ritual.cost > 0 && (
           <Text style={[styles.ritualCost, !affordable && styles.ritualCostShort]}>
-            costs {ritual.cost} sparks
+            {affordable
+              ? `costs ${ritual.cost} sparks`
+              : `${ritual.cost - sparks} more sparks needed. Try phone-free time!`}
           </Text>
         )}
       </View>
@@ -265,6 +276,17 @@ const styles = StyleSheet.create({
     color: Palette.white,
   },
 
+  growth: {
+    alignSelf: 'stretch',
+    gap: 4,
+    marginTop: 4,
+  },
+  growthText: {
+    textAlign: 'center',
+    fontFamily: HandFonts.regular,
+    fontSize: 14,
+    color: Palette.muted,
+  },
   stage: {
     marginTop: 16,
     paddingHorizontal: 20,
@@ -394,7 +416,7 @@ const styles = StyleSheet.create({
   vitalLabel: {
     flex: 1,
     fontFamily: HandFonts.bold,
-    fontSize: 17,
+    fontSize: 16,
     color: Palette.ink,
   },
   deltaPill: {
@@ -411,7 +433,7 @@ const styles = StyleSheet.create({
     color: Palette.ink,
   },
   vitalValue: {
-    minWidth: 44,
+    minWidth: 40,
     textAlign: 'right',
     fontFamily: HandFonts.bold,
     fontSize: 18,
@@ -506,7 +528,6 @@ const styles = StyleSheet.create({
     color: Palette.ink,
   },
   ritualCostShort: {
-    textDecorationLine: 'line-through',
     color: Palette.muted,
   },
   goButton: {

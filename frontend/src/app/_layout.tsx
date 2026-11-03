@@ -32,7 +32,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={theme}>
       <PetProvider>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Palette.paper } }} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Palette.paper } }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(tabs)" />
+          {/* no swipe-back mid-session; the session has its own way out */}
+          <Stack.Screen name="focus" options={{ gestureEnabled: false, animation: 'fade' }} />
+        </Stack>
       </PetProvider>
     </ThemeProvider>
   );

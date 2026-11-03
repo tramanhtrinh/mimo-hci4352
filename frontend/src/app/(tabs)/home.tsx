@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -8,7 +8,12 @@ import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
-import { bearMood, type Goal, usePet } from '@/state/pet';
+import { bearMood, currentNeed, type Goal, levelFor, type Need, usePet } from '@/state/pet';
+
+/** Sends the user wherever Mimo's current need is met. */
+function actOnNeed(need: Need) {
+  router.push(need.action === 'rest' ? '/focus' : '/pet');
+}
 
 export default function HomeScreen() {
   const { goals, message } = usePet();
@@ -18,6 +23,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Header />
         <PetCard />
+        <TodayCard />
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today&apos;s Mindful Goals</Text>
@@ -49,7 +55,7 @@ function Header() {
       </View>
       <View style={styles.headerText}>
         <Text style={styles.petName}>{name}</Text>
-        <Text style={styles.streak}>mindful streak: {streakDays} days</Text>
+        <Text style={styles.streak}>{streakDays}-day phone-free streak</Text>
       </View>
       <SparksPill />
     </View>
@@ -57,7 +63,9 @@ function Header() {
 }
 
 function PetCard() {
-  const { name, level, stage, stats } = usePet();
+  const { name, level, stage, stats, xp, nextLevel } = usePet();
+  const need = currentNeed(stats);
+  const growth = nextLevel ? (xp - levelFor(xp).xp) / (nextLevel.xp - levelFor(xp).xp) : 1;
   const shownStats = [
     { label: 'HAPPINESS', value: stats.mood },
     { label: 'ENERGY', value: stats.energy },
@@ -76,16 +84,32 @@ function PetCard() {
         </Pressable>
       </Link>
 
+      {/* Mimo speaks first: its need is the reason to act */}
+      <View style={styles.speech}>
+        <Text style={styles.speechText}>{need.says}</Text>
+        <View style={styles.speechTail} />
+      </View>
+
       <View style={styles.petRing}>
         <View style={styles.petCircle}>
-          <MimoCharacter size={130} mood={bearMood(stats)} />
+          <MimoCharacter size={120} mood={bearMood(stats)} />
         </View>
       </View>
 
-      <View style={styles.levelPill}>
-        <Text style={styles.levelText}>
-          {name} · Level {level} {stage}
-        </Text>
+      <Pressable onPress={() => actOnNeed(need)} style={({ pressed }) => [styles.cta, pressed && styles.pressed]}>
+        <Text style={styles.ctaText}>{need.cta}</Text>
+      </Pressable>
+
+      <View style={styles.growth}>
+        <View style={styles.statLabels}>
+          <Text style={styles.statLabel}>
+            {name} · LEVEL {level} {stage.toUpperCase()}
+          </Text>
+          <Text style={styles.statLabel}>
+            {nextLevel ? `${nextLevel.xp - xp} to ${nextLevel.stage}` : 'fully grown'}
+          </Text>
+        </View>
+        <HatchedProgress value={growth} duration={900} />
       </View>
 
       <View style={styles.stats}>
@@ -103,16 +127,39 @@ function PetCard() {
   );
 }
 
+/** Today's phone-free minutes against the daily goal: the habit Mimo is built around. */
+function TodayCard() {
+  const { phoneFreeMinutes, dailyGoalMinutes, name } = usePet();
+  const left = Math.max(0, dailyGoalMinutes - phoneFreeMinutes);
+
+  return (
+    <View style={styles.today}>
+      <View style={styles.statLabels}>
+        <Text style={styles.todayTitle}>Phone-free today</Text>
+        <Text style={styles.todayValue}>
+          {phoneFreeMinutes} / {dailyGoalMinutes} min
+        </Text>
+      </View>
+      <HatchedProgress value={Math.min(1, phoneFreeMinutes / dailyGoalMinutes)} duration={900} />
+      <Text style={styles.todayHint}>
+        {left > 0
+          ? `${left} more minutes keeps your streak and ${name}'s energy up.`
+          : `Daily goal reached! ${name} is so proud of you.`}
+      </Text>
+    </View>
+  );
+}
+
 function GoalRow({ goal }: { goal: Goal }) {
   const { completeGoal } = usePet();
-  const { title, done, progress, reward } = goal;
+  const { title, done, reward, focusMinutes } = goal;
 
   return (
     <View style={styles.goal}>
       <View style={styles.goalTop}>
         <Pressable
           onPress={() => completeGoal(goal.id)}
-          disabled={done}
+          disabled={done || !!focusMinutes}
           role="checkbox"
           aria-checked={done}
           accessibilityLabel={`Mark "${title}" complete`}
@@ -128,17 +175,20 @@ function GoalRow({ goal }: { goal: Goal }) {
           <Text style={styles.goalTitle}>{title}</Text>
           {!done && <Text style={styles.goalReward}>+{reward} sparks for Mimo</Text>}
         </View>
-        <View style={[styles.status, done && styles.statusDone]}>
-          <Text style={[styles.statusText, done && styles.statusTextDone]}>
-            {done ? 'Completed ✓' : 'In progress'}
-          </Text>
-        </View>
+        {done ? (
+          <View style={[styles.status, styles.statusDone]}>
+            <Text style={[styles.statusText, styles.statusTextDone]}>Completed ✓</Text>
+          </View>
+        ) : focusMinutes ? (
+          <Pressable onPress={() => router.push('/focus')} style={[styles.status, styles.statusDone]}>
+            <Text style={[styles.statusText, styles.statusTextDone]}>Start →</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.status}>
+            <Text style={styles.statusText}>Tap ○ when done</Text>
+          </View>
+        )}
       </View>
-      {!done && progress > 0 && (
-        <View style={styles.goalProgress}>
-          <HatchedProgress value={progress} duration={900} />
-        </View>
-      )}
     </View>
   );
 }
@@ -155,6 +205,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
     alignSelf: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
   },
 
   header: {
@@ -189,7 +242,7 @@ const styles = StyleSheet.create({
 
   card: {
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
     padding: 20,
     borderRadius: 28,
     borderWidth: 2,
@@ -205,6 +258,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     right: 16,
+    zIndex: 1,
     width: 34,
     height: 34,
     borderRadius: 17,
@@ -212,8 +266,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  speech: {
+    marginTop: 28,
+    maxWidth: 260,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Palette.paper,
+  },
+  speechText: {
+    fontFamily: HandFonts.bold,
+    fontSize: 17,
+    lineHeight: 20,
+    textAlign: 'center',
+    color: Palette.ink,
+  },
+  speechTail: {
+    position: 'absolute',
+    bottom: -8,
+    alignSelf: 'center',
+    width: 14,
+    height: 14,
+    backgroundColor: Palette.paper,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: Palette.ink,
+    transform: [{ rotate: '45deg' }],
+  },
   petRing: {
-    marginTop: 8,
     padding: 8,
     borderRadius: 999,
     borderWidth: 2,
@@ -221,27 +303,30 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   petCircle: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
     borderWidth: 2,
     borderColor: Palette.ink,
     backgroundColor: Palette.shade,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  levelPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Palette.ink,
-    backgroundColor: Palette.paper,
+  cta: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 24,
+    backgroundColor: Palette.ink,
   },
-  levelText: {
+  ctaText: {
     fontFamily: HandFonts.bold,
-    fontSize: 16,
-    color: Palette.ink,
+    fontSize: 20,
+    color: Palette.white,
+  },
+  growth: {
+    alignSelf: 'stretch',
+    gap: 6,
   },
   stats: {
     flexDirection: 'row',
@@ -255,12 +340,37 @@ const styles = StyleSheet.create({
   statLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'baseline',
   },
   statLabel: {
     fontFamily: HandFonts.bold,
     fontSize: 13,
     letterSpacing: 1,
     color: Palette.ink,
+  },
+
+  today: {
+    gap: 8,
+    padding: 16,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Palette.white,
+  },
+  todayTitle: {
+    fontFamily: HandFonts.bold,
+    fontSize: 20,
+    color: Palette.ink,
+  },
+  todayValue: {
+    fontFamily: HandFonts.bold,
+    fontSize: 17,
+    color: Palette.ink,
+  },
+  todayHint: {
+    fontFamily: HandFonts.regular,
+    fontSize: 15,
+    color: Palette.muted,
   },
 
   sectionHeader: {
@@ -310,22 +420,16 @@ const styles = StyleSheet.create({
   goalText: {
     flex: 1,
   },
-  goalReward: {
-    fontFamily: HandFonts.regular,
-    fontSize: 14,
-    color: Palette.muted,
-  },
-  message: {
-    textAlign: 'center',
-    fontFamily: HandFonts.bold,
-    fontSize: 16,
-    color: Palette.ink,
-  },
   goalTitle: {
     fontFamily: HandFonts.bold,
     fontSize: 17,
     lineHeight: 20,
     color: Palette.ink,
+  },
+  goalReward: {
+    fontFamily: HandFonts.regular,
+    fontSize: 14,
+    color: Palette.muted,
   },
   status: {
     paddingHorizontal: 10,
@@ -345,7 +449,10 @@ const styles = StyleSheet.create({
   statusTextDone: {
     color: Palette.white,
   },
-  goalProgress: {
-    paddingLeft: 40,
+  message: {
+    textAlign: 'center',
+    fontFamily: HandFonts.bold,
+    fontSize: 16,
+    color: Palette.ink,
   },
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Defs, Line, Pattern, Rect } from 'react-native-svg';
 
@@ -15,6 +15,9 @@ type Props = {
 /** A rounded loading bar filled with diagonal hatching, like a pen sketch. */
 export function HatchedProgress({ value = 1, duration = 2800, onComplete }: Props) {
   const progress = useRef(new Animated.Value(0)).current;
+  // Pattern ids are document-global on web, and screens stay mounted underneath each other,
+  // so each bar needs its own id or it may pick up a hidden screen's pattern.
+  const patternId = `hatch-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
 
   useEffect(() => {
     const animation = Animated.timing(progress, {
@@ -34,11 +37,11 @@ export function HatchedProgress({ value = 1, duration = 2800, onComplete }: Prop
       <Animated.View style={[styles.fill, { width }]}>
         <Svg width="100%" height="100%">
           <Defs>
-            <Pattern id="hatch" width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <Pattern id={patternId} width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
               <Line x1={0} y1={0} x2={0} y2={7} stroke={Palette.ink} strokeWidth={3} />
             </Pattern>
           </Defs>
-          <Rect width="100%" height="100%" fill="url(#hatch)" />
+          <Rect width="100%" height="100%" fill={`url(#${patternId})`} />
         </Svg>
       </Animated.View>
     </View>
