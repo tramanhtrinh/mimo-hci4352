@@ -7,7 +7,7 @@ import { Sparkle } from '@/components/mimo/decorations';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { HandFonts, Palette } from '@/constants/theme';
-import { focusReward, levelFor, SPARKS_PER_MINUTE, usePet } from '@/state/pet';
+import { focusReward, levelFor, restGoalsKeptBy, SPARKS_PER_MINUTE, usePet } from '@/state/pet';
 
 const DURATIONS = [5, 15, 30];
 
@@ -155,10 +155,9 @@ function Running({
     finished.current = true;
     const done = Math.min(minutes, Math.floor((Date.now() - startedAt.current) / msPerMinute));
     const reward = focusReward(done, peeks, early);
-    const goalsDone = early
-      ? []
-      : goals.filter((g) => !g.done && g.focusMinutes && done >= g.focusMinutes).map((g) => g.title);
-    const goalSparks = goals.filter((g) => goalsDone.includes(g.title)).reduce((sum, g) => sum + g.reward, 0);
+    const kept = early ? [] : restGoalsKeptBy(goals, done);
+    const goalsDone = kept.map((g) => g.title);
+    const goalSparks = kept.reduce((sum, g) => sum + g.reward, 0);
     const before = levelFor(xp);
     const after = levelFor(xp + reward.xp);
 

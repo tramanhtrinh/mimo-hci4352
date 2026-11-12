@@ -1,5 +1,7 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
 
+import { type Goal, type GoalDraft, INITIAL_GOALS, isScheduledToday, todayIndex, todayStatus } from '@/state/goals';
+
 /**
  * In-memory pet state for the demo.
  *
@@ -13,14 +15,7 @@ export type StatKey = 'mood' | 'energy' | 'hunger';
 export type Stats = Record<StatKey, number>;
 export type RitualId = 'rest' | 'feed' | 'play';
 
-export type Goal = {
-  id: string;
-  title: string;
-  done: boolean;
-  reward: number;
-  /** Completes automatically after a phone-free session of at least this many minutes. */
-  focusMinutes?: number;
-};
+export type { Goal } from '@/state/goals';
 
 export type Ritual = {
   id: RitualId;
@@ -108,16 +103,14 @@ const initialState: State = {
   deltas: {},
   message: null,
   interaction: 0,
-  goals: [
-    { id: 'scroll', title: 'Reduce bedtime scrolling by 10m', done: true, reward: 20 },
-    { id: 'rest', title: 'Rest with Mimo phone-free for 15m', done: false, reward: 20, focusMinutes: 15 },
-    { id: 'dinner', title: 'Stay phone-free during dinner', done: false, reward: 20 },
-  ],
+  goals: INITIAL_GOALS,
 };
 
 type Action =
   | { type: 'ritual'; id: RitualId }
-  | { type: 'completeGoal'; id: string }
+  | { type: 'checkIn'; id: string; status: 'done' | 'skipped' }
+  | { type: 'saveGoal'; draft: GoalDraft }
+  | { type: 'deleteGoal'; id: string }
   | { type: 'setFocusing'; focusing: boolean }
   | { type: 'finishFocus'; minutes: number; peeks: number; early: boolean }
   | { type: 'decay' }
@@ -175,20 +168,48 @@ function reducer(state: State, action: Action): State {
         interaction: state.interaction + 1,
       };
     }
-    case 'completeGoal': {
+    case 'checkIn': {
       const goal = state.goals.find((g) => g.id === action.id);
-      if (!goal || goal.done) return state;
+      if (!goal || !isScheduledToday(goal) || todayStatus(goal) === 'done') return state;
+      const today = todayIndex();
+      const week = goal.week.map((d, i) => (i === today ? action.status : d));
+
+      if (action.status === 'skipped') {
+        // No sparks lost: honesty is the point. The streak just starts over.
+        return {
+          ...state,
+          deltas: {},
+          message: 'Thanks for being honest. Tomorrow is a fresh start, and Mimo still loves you.',
+          goals: state.goals.map((g) => (g.id === goal.id ? { ...g, week, streak: 0 } : g)),
+        };
+      }
+
       const { stats, deltas } = applyEffect(state.stats, { mood: GOAL_MOOD_BOOST });
+      const treat = goal.personalReward ? ` Enjoy ${goal.personalReward}!` : '';
       return {
         ...state,
         sparks: state.sparks + goal.reward,
         stats,
         deltas,
-        message: `Goal done! +${goal.reward} sparks. Mimo is proud of you.`,
+        message: `Goal kept! +${goal.reward} sparks for Mimo.${treat}`,
         interaction: state.interaction + 1,
-        goals: state.goals.map((g) => (g.id === goal.id ? { ...g, done: true } : g)),
+        goals: state.goals.map((g) => (g.id === goal.id ? { ...g, week, streak: g.streak + 1 } : g)),
       };
     }
+    case 'saveGoal': {
+      const { draft } = action;
+      if (draft.id) {
+        return {
+          ...state,
+          goals: state.goals.map((g) => (g.id === draft.id ? { ...g, ...draft, id: g.id } : g)),
+          message: 'Goal updated. Adjusting is part of the process!',
+        };
+      }
+      const goal: Goal = { ...draft, id: `goal-${Date.now()}`, streak: 0, week: [null, null, null, null, null, null, null] };
+      return { ...state, goals: [...state.goals, goal], message: 'New goal set. Mimo believes in you!' };
+    }
+    case 'deleteGoal':
+      return { ...state, goals: state.goals.filter((g) => g.id !== action.id) };
     case 'setFocusing':
       return { ...state, focusing: action.focusing };
     case 'finishFocus': {
@@ -196,15 +217,15 @@ function reducer(state: State, action: Action): State {
       const reward = focusReward(minutes, peeks, early);
       const { stats, deltas } = applyEffect(state.stats, reward.effect);
 
-      // Long enough sessions tick off matching goals and pay their reward too.
-      let goalSparks = 0;
-      const goals = state.goals.map((g) => {
-        if (!g.done && !early && g.focusMinutes && minutes >= g.focusMinutes) {
-          goalSparks += g.reward;
-          return { ...g, done: true };
-        }
-        return g;
-      });
+      // Long enough sessions check in "Rest with Mimo" goals for today and pay their reward too.
+      const completed = early ? [] : restGoalsKeptBy(state.goals, minutes);
+      const goalSparks = completed.reduce((sum, g) => sum + g.reward, 0);
+      const today = todayIndex();
+      const goals = state.goals.map((g) =>
+        completed.includes(g)
+          ? { ...g, streak: g.streak + 1, week: g.week.map((d, i) => (i === today ? ('done' as const) : d)) }
+          : g,
+      );
 
       const xp = state.xp + reward.xp;
       const grew = levelFor(xp).level > levelFor(state.xp).level;
@@ -237,12 +258,19 @@ function reducer(state: State, action: Action): State {
   }
 }
 
+/** "Rest with Mimo" goals a session of this length would complete today. */
+export function restGoalsKeptBy(goals: Goal[], minutes: number) {
+  return goals.filter((g) => g.kind === 'rest' && isScheduledToday(g) && todayStatus(g) !== 'done' && minutes >= g.minutes);
+}
+
 type PetContextValue = State & {
   level: number;
   stage: string;
   nextLevel: (typeof LEVELS)[number] | undefined;
   doRitual: (id: RitualId) => void;
-  completeGoal: (id: string) => void;
+  checkIn: (id: string, status: 'done' | 'skipped') => void;
+  saveGoal: (draft: GoalDraft) => void;
+  deleteGoal: (id: string) => void;
   setFocusing: (focusing: boolean) => void;
   finishFocus: (minutes: number, peeks: number, early: boolean) => void;
   clearFeedback: () => void;
@@ -254,7 +282,12 @@ export function PetProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const doRitual = useCallback((id: RitualId) => dispatch({ type: 'ritual', id }), []);
-  const completeGoal = useCallback((id: string) => dispatch({ type: 'completeGoal', id }), []);
+  const checkIn = useCallback(
+    (id: string, status: 'done' | 'skipped') => dispatch({ type: 'checkIn', id, status }),
+    [],
+  );
+  const saveGoal = useCallback((draft: GoalDraft) => dispatch({ type: 'saveGoal', draft }), []);
+  const deleteGoal = useCallback((id: string) => dispatch({ type: 'deleteGoal', id }), []);
   const setFocusing = useCallback((focusing: boolean) => dispatch({ type: 'setFocusing', focusing }), []);
   const finishFocus = useCallback(
     (minutes: number, peeks: number, early: boolean) => dispatch({ type: 'finishFocus', minutes, peeks, early }),
@@ -282,12 +315,14 @@ export function PetProvider({ children }: { children: ReactNode }) {
       stage,
       nextLevel: next,
       doRitual,
-      completeGoal,
+      checkIn,
+      saveGoal,
+      deleteGoal,
       setFocusing,
       finishFocus,
       clearFeedback,
     };
-  }, [state, doRitual, completeGoal, setFocusing, finishFocus, clearFeedback]);
+  }, [state, doRitual, checkIn, saveGoal, deleteGoal, setFocusing, finishFocus, clearFeedback]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 }

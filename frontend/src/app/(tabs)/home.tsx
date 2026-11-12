@@ -4,11 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { Sparkle } from '@/components/mimo/decorations';
+import { GoalCard } from '@/components/mimo/goal-card';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
-import { bearMood, currentNeed, type Goal, levelFor, type Need, usePet } from '@/state/pet';
+import { isScheduledToday } from '@/state/goals';
+import { bearMood, currentNeed, levelFor, type Need, usePet } from '@/state/pet';
 
 /** Sends the user wherever Mimo's current need is met. */
 function actOnNeed(need: Need) {
@@ -17,6 +19,7 @@ function actOnNeed(need: Need) {
 
 export default function HomeScreen() {
   const { goals, message } = usePet();
+  const todaysGoals = goals.filter(isScheduledToday);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -35,9 +38,16 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.goals}>
-          {goals.map((goal) => (
-            <GoalRow key={goal.id} goal={goal} />
+          {todaysGoals.map((goal) => (
+            <GoalCard key={goal.id} goal={goal} compact />
           ))}
+          {todaysGoals.length === 0 && (
+            <Link href="/goal-editor" asChild>
+              <Pressable style={styles.addGoal}>
+                <Text style={styles.addGoalText}>+ Set a goal for today</Text>
+              </Pressable>
+            </Link>
+          )}
         </View>
         {message && <Text style={styles.message}>{message}</Text>}
       </ScrollView>
@@ -146,49 +156,6 @@ function TodayCard() {
           ? `${left} more minutes keeps your streak and ${name}'s energy up.`
           : `Daily goal reached! ${name} is so proud of you.`}
       </Text>
-    </View>
-  );
-}
-
-function GoalRow({ goal }: { goal: Goal }) {
-  const { completeGoal } = usePet();
-  const { title, done, reward, focusMinutes } = goal;
-
-  return (
-    <View style={styles.goal}>
-      <View style={styles.goalTop}>
-        <Pressable
-          onPress={() => completeGoal(goal.id)}
-          disabled={done || !!focusMinutes}
-          role="checkbox"
-          aria-checked={done}
-          accessibilityLabel={`Mark "${title}" complete`}
-          hitSlop={8}
-          style={[styles.check, done && styles.checkDone]}>
-          {done && (
-            <Svg width={14} height={14} viewBox="0 0 14 14">
-              <Path d="M2.5 7.2 L5.7 10 L11.5 4" fill="none" stroke={Palette.white} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          )}
-        </Pressable>
-        <View style={styles.goalText}>
-          <Text style={styles.goalTitle}>{title}</Text>
-          {!done && <Text style={styles.goalReward}>+{reward} sparks for Mimo</Text>}
-        </View>
-        {done ? (
-          <View style={[styles.status, styles.statusDone]}>
-            <Text style={[styles.statusText, styles.statusTextDone]}>Completed ✓</Text>
-          </View>
-        ) : focusMinutes ? (
-          <Pressable onPress={() => router.push('/focus')} style={[styles.status, styles.statusDone]}>
-            <Text style={[styles.statusText, styles.statusTextDone]}>Start →</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.status}>
-            <Text style={styles.statusText}>Tap ○ when done</Text>
-          </View>
-        )}
-      </View>
     </View>
   );
 }
@@ -392,62 +359,18 @@ const styles = StyleSheet.create({
   goals: {
     gap: 12,
   },
-  goal: {
-    gap: 12,
-    padding: 14,
+  addGoal: {
+    alignItems: 'center',
+    paddingVertical: 14,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: Palette.ink,
-    backgroundColor: Palette.white,
+    borderStyle: 'dashed',
   },
-  goalTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  check: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: Palette.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkDone: {
-    backgroundColor: Palette.ink,
-  },
-  goalText: {
-    flex: 1,
-  },
-  goalTitle: {
+  addGoalText: {
     fontFamily: HandFonts.bold,
-    fontSize: 17,
-    lineHeight: 20,
+    fontSize: 18,
     color: Palette.ink,
-  },
-  goalReward: {
-    fontFamily: HandFonts.regular,
-    fontSize: 14,
-    color: Palette.muted,
-  },
-  status: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: Palette.ink,
-  },
-  statusDone: {
-    backgroundColor: Palette.ink,
-  },
-  statusText: {
-    fontFamily: HandFonts.bold,
-    fontSize: 13,
-    color: Palette.ink,
-  },
-  statusTextDone: {
-    color: Palette.white,
   },
   message: {
     textAlign: 'center',
