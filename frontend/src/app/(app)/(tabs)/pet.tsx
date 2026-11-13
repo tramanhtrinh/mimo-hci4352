@@ -15,11 +15,10 @@ import {
 } from '@/components/mimo/care-icons';
 import { Sparkle } from '@/components/mimo/decorations';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
-import { MimoCharacter } from '@/components/mimo/mimo-bear';
+import { MimoPet } from '@/components/mimo/mimo-pet';
 import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
 import {
-  bearMood,
   currentNeed,
   describeStat,
   levelFor,
@@ -98,7 +97,7 @@ function InkBand() {
 }
 
 function PetPortrait() {
-  const { stats, interaction } = usePet();
+  const { interaction } = usePet();
   const bounce = useRef(new Animated.Value(1)).current;
 
   // Hop a little whenever Mimo is cared for.
@@ -121,7 +120,7 @@ function PetPortrait() {
       <View style={styles.ring}>
         <View style={styles.petCircle}>
           <Animated.View style={{ transform: [{ scale: bounce }] }}>
-            <MimoCharacter size={140} mood={bearMood(stats)} />
+            <MimoPet size={140} />
           </Animated.View>
         </View>
       </View>

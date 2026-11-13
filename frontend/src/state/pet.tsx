@@ -12,6 +12,7 @@ import {
   todayIndex,
   todayStatus,
 } from '@/state/goals';
+import { type AccessoryId, DAILY_GIFT, SHOP, todayKey } from '@/state/shop';
 
 /**
  * In-memory pet state for the demo.
@@ -88,8 +89,15 @@ type State = {
   streakDays: number;
   sparks: number;
   xp: number;
-  phoneFreeMinutes: number;
+  /** Phone-free minutes for each day of the current week, Sunday first. */
+  phoneFreeByDay: number[];
+  totalPhoneFreeMinutes: number;
+  sessions: number;
   dailyGoalMinutes: number;
+  owned: AccessoryId[];
+  equipped: AccessoryId | null;
+  /** Day the daily gift was last claimed. */
+  lastGiftDay: string | null;
   focusing: boolean;
   stats: Stats;
   /** Most recent change per stat, shown as a "+5%" badge. */
@@ -101,13 +109,24 @@ type State = {
   goals: Goal[];
 };
 
+/** Some phone-free history earlier this week so the demo's Progress tab has a story. */
+function seedMinutes() {
+  const today = todayIndex();
+  return [30, 45, 20, 55, 15, 40, 35].map((m, i) => (i < today ? m : i === today ? 25 : 0));
+}
+
 const initialState: State = {
   name: 'Mimo',
   streakDays: 3,
   sparks: 20,
   xp: 175,
-  phoneFreeMinutes: 25,
+  phoneFreeByDay: seedMinutes(),
+  totalPhoneFreeMinutes: 640,
+  sessions: 18,
   dailyGoalMinutes: 60,
+  owned: ['bow'],
+  equipped: null,
+  lastGiftDay: null,
   focusing: false,
   // Mimo starts the demo a bit sleepy, so the first thing it asks for is phone-free rest.
   stats: { mood: 62, energy: 38, hunger: 55 },
@@ -123,25 +142,44 @@ const newUserState: State = {
   streakDays: 0,
   sparks: 20,
   xp: 0,
-  phoneFreeMinutes: 0,
+  phoneFreeByDay: [0, 0, 0, 0, 0, 0, 0],
+  totalPhoneFreeMinutes: 0,
+  sessions: 0,
+  owned: [],
   stats: { mood: 60, energy: 38, hunger: 55 },
   goals: [],
 };
 
 /** The parts of state worth keeping between visits. */
-type SavedState = Pick<State, 'streakDays' | 'sparks' | 'xp' | 'phoneFreeMinutes' | 'dailyGoalMinutes' | 'stats' | 'goals'> & {
-  weekKey: string;
-};
+const SAVED_KEYS = [
+  'streakDays',
+  'sparks',
+  'xp',
+  'phoneFreeByDay',
+  'totalPhoneFreeMinutes',
+  'sessions',
+  'dailyGoalMinutes',
+  'owned',
+  'equipped',
+  'lastGiftDay',
+  'stats',
+  'goals',
+] as const;
+type SavedState = Pick<State, (typeof SAVED_KEYS)[number]> & { weekKey: string };
 
 function toSaved(state: State): SavedState {
-  const { streakDays, sparks, xp, phoneFreeMinutes, dailyGoalMinutes, stats, goals } = state;
-  return { streakDays, sparks, xp, phoneFreeMinutes, dailyGoalMinutes, stats, goals, weekKey: currentWeekKey() };
+  const saved = Object.fromEntries(SAVED_KEYS.map((k) => [k, state[k]])) as Pick<State, (typeof SAVED_KEYS)[number]>;
+  return { ...saved, weekKey: currentWeekKey() };
 }
 
-function fromSaved(saved: SavedState): State {
-  // Check-ins from an earlier week don't carry over into this week's dots.
-  const goals = saved.weekKey === currentWeekKey() ? saved.goals : saved.goals.map((g) => ({ ...g, week: EMPTY_WEEK }));
-  return { ...initialState, ...saved, goals };
+function fromSaved(saved: Partial<SavedState>, fresh: State): State {
+  const merged = { ...fresh, ...saved };
+  // Check-ins and daily minutes from an earlier week don't carry into this week.
+  if (saved.weekKey !== currentWeekKey()) {
+    merged.goals = merged.goals.map((g) => ({ ...g, week: EMPTY_WEEK }));
+    merged.phoneFreeByDay = [0, 0, 0, 0, 0, 0, 0];
+  }
+  return merged;
 }
 
 type Action =
@@ -153,7 +191,10 @@ type Action =
   | { type: 'finishFocus'; minutes: number; peeks: number; early: boolean }
   | { type: 'decay' }
   | { type: 'clearFeedback' }
-  | { type: 'load'; state: State };
+  | { type: 'load'; state: State }
+  | { type: 'buy'; id: AccessoryId }
+  | { type: 'equip'; id: AccessoryId | null }
+  | { type: 'claimGift' };
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
@@ -279,7 +320,9 @@ function reducer(state: State, action: Action): State {
         focusing: false,
         sparks: state.sparks + reward.sparks + goalSparks,
         xp,
-        phoneFreeMinutes: state.phoneFreeMinutes + minutes,
+        phoneFreeByDay: state.phoneFreeByDay.map((m, i) => (i === today ? m + minutes : m)),
+        totalPhoneFreeMinutes: state.totalPhoneFreeMinutes + minutes,
+        sessions: minutes > 0 ? state.sessions + 1 : state.sessions,
         stats,
         deltas,
         goals,
@@ -296,6 +339,37 @@ function reducer(state: State, action: Action): State {
       return { ...state, deltas: {}, message: null };
     case 'load':
       return action.state;
+    case 'buy': {
+      const item = SHOP.find((i) => i.id === action.id);
+      if (!item || state.owned.includes(item.id)) return state;
+      if (state.sparks < item.cost) {
+        return { ...state, message: `${item.cost - state.sparks} more sparks needed. Phone-free time earns ${SPARKS_PER_MINUTE} a minute!` };
+      }
+      const { stats, deltas } = applyEffect(state.stats, { mood: 10 });
+      return {
+        ...state,
+        sparks: state.sparks - item.cost,
+        owned: [...state.owned, item.id],
+        equipped: item.id,
+        stats,
+        deltas,
+        message: `${item.name} unlocked! Your phone-free time paid for this.`,
+        interaction: state.interaction + 1,
+      };
+    }
+    case 'equip':
+      if (action.id && !state.owned.includes(action.id)) return state;
+      return { ...state, equipped: action.id, interaction: state.interaction + 1 };
+    case 'claimGift': {
+      if (state.lastGiftDay === todayKey()) return state;
+      return {
+        ...state,
+        sparks: state.sparks + DAILY_GIFT,
+        lastGiftDay: todayKey(),
+        message: `+${DAILY_GIFT} sparks. Thanks for checking in today!`,
+        interaction: state.interaction + 1,
+      };
+    }
   }
 }
 
@@ -314,7 +388,13 @@ type PetContextValue = State & {
   deleteGoal: (id: string) => void;
   setFocusing: (focusing: boolean) => void;
   finishFocus: (minutes: number, peeks: number, early: boolean) => void;
+  buyItem: (id: AccessoryId) => void;
+  equipItem: (id: AccessoryId | null) => void;
+  claimGift: () => void;
   clearFeedback: () => void;
+  /** Today's phone-free minutes. */
+  phoneFreeMinutes: number;
+  giftAvailable: boolean;
 };
 
 const PetContext = createContext<PetContextValue | null>(null);
@@ -337,7 +417,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
       .then((raw) => {
         if (cancelled) return;
         const fresh = userId === 'demo' ? initialState : newUserState;
-        dispatch({ type: 'load', state: raw ? fromSaved(JSON.parse(raw)) : fresh });
+        dispatch({ type: 'load', state: raw ? fromSaved(JSON.parse(raw), fresh) : fresh });
       })
       .catch(() => {})
       .finally(() => !cancelled && setLoaded(true));
@@ -364,6 +444,9 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
     [],
   );
   const clearFeedback = useCallback(() => dispatch({ type: 'clearFeedback' }), []);
+  const buyItem = useCallback((id: AccessoryId) => dispatch({ type: 'buy', id }), []);
+  const equipItem = useCallback((id: AccessoryId | null) => dispatch({ type: 'equip', id }), []);
+  const claimGift = useCallback(() => dispatch({ type: 'claimGift' }), []);
 
   // Reaction messages and "+5%" badges fade out after a few seconds.
   useEffect(() => {
@@ -382,6 +465,11 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
     return {
       ...state,
       name: petName,
+      phoneFreeMinutes: state.phoneFreeByDay[todayIndex()],
+      giftAvailable: state.lastGiftDay !== todayKey(),
+      buyItem,
+      equipItem,
+      claimGift,
       level,
       stage,
       nextLevel: next,
@@ -393,7 +481,20 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
       finishFocus,
       clearFeedback,
     };
-  }, [state, petName, doRitual, checkIn, saveGoal, deleteGoal, setFocusing, finishFocus, clearFeedback]);
+  }, [
+    state,
+    petName,
+    doRitual,
+    checkIn,
+    saveGoal,
+    deleteGoal,
+    setFocusing,
+    finishFocus,
+    buyItem,
+    equipItem,
+    claimGift,
+    clearFeedback,
+  ]);
 
   if (!loaded) return null;
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;

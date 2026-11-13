@@ -6,12 +6,12 @@ import Svg, { Path } from 'react-native-svg';
 import { Sparkle } from '@/components/mimo/decorations';
 import { GoalCard } from '@/components/mimo/goal-card';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
-import { MimoCharacter } from '@/components/mimo/mimo-bear';
+import { MimoPet } from '@/components/mimo/mimo-pet';
 import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
 import { useAuth } from '@/state/auth';
 import { isScheduledToday } from '@/state/goals';
-import { bearMood, currentNeed, levelFor, type Need, usePet } from '@/state/pet';
+import { currentNeed, levelFor, type Need, usePet } from '@/state/pet';
 
 /** Sends the user wherever Mimo's current need is met. */
 function actOnNeed(need: Need) {
@@ -57,7 +57,7 @@ export default function HomeScreen() {
 }
 
 function Header() {
-  const { name, streakDays, stats } = usePet();
+  const { name, streakDays } = usePet();
   const { user } = useAuth();
   const firstName = user?.name.split(' ')[0];
 
@@ -65,7 +65,7 @@ function Header() {
     <View style={styles.header}>
       <Link href="/account" asChild>
         <Pressable style={styles.avatar} accessibilityLabel="Account" hitSlop={6}>
-          <MimoCharacter size={32} mood={bearMood(stats)} />
+          <MimoPet size={32} />
         </Pressable>
       </Link>
       <View style={styles.headerText}>
@@ -111,7 +111,7 @@ function PetCard() {
 
       <View style={styles.petRing}>
         <View style={styles.petCircle}>
-          <MimoCharacter size={120} mood={bearMood(stats)} />
+          <MimoPet size={120} />
         </View>
       </View>
 

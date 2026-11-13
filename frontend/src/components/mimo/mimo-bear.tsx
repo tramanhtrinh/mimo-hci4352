@@ -1,18 +1,21 @@
 import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 
 import { Palette } from '@/constants/theme';
+import type { AccessoryId } from '@/state/shop';
 
 export type BearMood = 'joyful' | 'calm' | 'sad' | 'sleepy';
 
 type Props = {
   size?: number;
   mood?: BearMood;
+  /** Something Mimo is wearing, bought with sparks. */
+  accessory?: AccessoryId | null;
 };
 
 const stroke = { stroke: Palette.ink, strokeWidth: 4, strokeLinejoin: 'round' as const };
 
 /** The bear's shapes, drawn in a 320×320 coordinate space. */
-function BearShapes({ mood = 'calm' }: { mood?: BearMood }) {
+function BearShapes({ mood = 'calm', accessory }: { mood?: BearMood; accessory?: AccessoryId | null }) {
   return (
     <G>
       {/* ears, arms and feet sit behind the body so its outline covers the overlap */}
@@ -32,6 +35,7 @@ function BearShapes({ mood = 'calm' }: { mood?: BearMood }) {
 
       {/* face */}
       <Face mood={mood} />
+      {accessory && <Accessory id={accessory} />}
     </G>
   );
 }
@@ -80,11 +84,79 @@ function Face({ mood }: { mood: BearMood }) {
   );
 }
 
+/** Accessories drawn in the same 320×320 space as the bear. */
+function Accessory({ id }: { id: AccessoryId }) {
+  const ink = { stroke: Palette.ink, strokeWidth: 3.5, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
+
+  switch (id) {
+    case 'bow':
+      return (
+        <G>
+          <Path d="M200 74 L176 60 L180 88 Z" fill={Palette.white} {...ink} />
+          <Path d="M200 74 L224 60 L220 88 Z" fill={Palette.white} {...ink} />
+          <Circle cx={200} cy={74} r={6} fill={Palette.ink} />
+        </G>
+      );
+    case 'scarf':
+      return (
+        <G>
+          <Path d="M100 168 C130 182 190 182 220 168 L222 186 C190 200 130 200 98 186 Z" fill={Palette.shade} {...ink} />
+          <Path d="M182 188 L192 226 L174 228 L168 192 Z" fill={Palette.shade} {...ink} />
+          <Path d="M120 178 L118 192 M140 182 L139 196 M160 183 L160 197 M200 180 L202 194" {...ink} strokeWidth={2} />
+        </G>
+      );
+    case 'glasses':
+      return (
+        <G>
+          <Circle cx={142} cy={136} r={17} fill="none" {...ink} />
+          <Circle cx={180} cy={136} r={17} fill="none" {...ink} />
+          <Path d="M159 134 Q161 130 163 134" fill="none" {...ink} />
+          <Path d="M125 132 L104 126 M197 132 L218 126" {...ink} />
+        </G>
+      );
+    case 'flower':
+      return (
+        <G>
+          <Path d="M112 88 C135 72 185 72 208 88" fill="none" {...ink} strokeWidth={3} />
+          {[118, 140, 160, 180, 202].map((x, i) => {
+            const y = i === 0 || i === 4 ? 86 : i === 2 ? 74 : 78;
+            return (
+              <G key={x}>
+                {[0, 72, 144, 216, 288].map((a) => (
+                  <Circle
+                    key={a}
+                    cx={x + 7 * Math.cos((a * Math.PI) / 180)}
+                    cy={y + 7 * Math.sin((a * Math.PI) / 180)}
+                    r={5}
+                    fill={Palette.white}
+                    stroke={Palette.ink}
+                    strokeWidth={2}
+                  />
+                ))}
+                <Circle cx={x} cy={y} r={3.5} fill={Palette.ink} />
+              </G>
+            );
+          })}
+        </G>
+      );
+    case 'hat':
+      return (
+        <G>
+          <Path d="M136 86 L172 26 L194 82 Z" fill={Palette.white} {...ink} />
+          <Path d="M148 66 L182 58 M141 78 L188 68" {...ink} strokeWidth={2.5} />
+          <Circle cx={172} cy={24} r={8} fill={Palette.ink} />
+        </G>
+      );
+  }
+}
+
 /** Just the bear, cropped tight, for avatars and cards. */
-export function MimoCharacter({ size = 120, mood }: Props) {
+export function MimoCharacter({ size = 120, mood, accessory }: Props) {
+  // tall accessories need a little more headroom
+  const viewBox = accessory === 'hat' ? '55 12 210 253' : accessory === 'flower' ? '68 50 184 215' : '70 60 180 205';
   return (
-    <Svg width={size} height={size} viewBox="70 60 180 205">
-      <BearShapes mood={mood} />
+    <Svg width={size} height={size} viewBox={viewBox}>
+      <BearShapes mood={mood} accessory={accessory} />
     </Svg>
   );
 }

@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Sparkle } from '@/components/mimo/decorations';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
-import { MimoCharacter } from '@/components/mimo/mimo-bear';
+import { MimoPet } from '@/components/mimo/mimo-pet';
 import { HandFonts, Palette } from '@/constants/theme';
 import { focusReward, levelFor, restGoalsKeptBy, SPARKS_PER_MINUTE, usePet } from '@/state/pet';
 
@@ -85,7 +85,7 @@ function Setup({
         <Text style={styles.closeText}>not now</Text>
       </Pressable>
 
-      <MimoCharacter size={150} mood="sleepy" />
+      <MimoPet size={150} mood="sleepy" />
       <Text style={styles.title}>Phone-free time</Text>
       <Text style={styles.body}>
         Put your phone face-down and {name} will nap beside you. You&apos;ll earn {SPARKS_PER_MINUTE} sparks for
@@ -214,7 +214,7 @@ function Running({
       <View style={styles.sleeper}>
         <FloatingZ />
         <View style={styles.sleeperCircle}>
-          <MimoCharacter size={150} mood="sleepy" />
+          <MimoPet size={150} mood="sleepy" />
         </View>
       </View>
 
@@ -286,7 +286,7 @@ function Done({ summary }: { summary: Summary }) {
         <Sparkle size={18} />
         <Sparkle size={12} />
       </View>
-      <MimoCharacter size={150} mood={summary.early ? 'calm' : 'joyful'} />
+      <MimoPet size={150} mood={summary.early ? 'calm' : 'joyful'} />
       <Text style={styles.title}>{summary.early ? 'Welcome back' : 'You did it!'}</Text>
       <Text style={styles.body}>
         {summary.minutes} phone-free {summary.minutes === 1 ? 'minute' : 'minutes'}.{' '}

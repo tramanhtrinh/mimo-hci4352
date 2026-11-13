@@ -4,10 +4,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Field, FormButton, FormNote } from '@/components/mimo/form';
-import { MimoCharacter } from '@/components/mimo/mimo-bear';
+import { MimoPet } from '@/components/mimo/mimo-pet';
 import { HandFonts, Palette } from '@/constants/theme';
 import { useAuth } from '@/state/auth';
-import { bearMood, usePet } from '@/state/pet';
+import { usePet } from '@/state/pet';
 
 type Note = { text: string; kind: 'error' | 'success' } | null;
 
@@ -47,14 +47,14 @@ export default function AccountScreen() {
 
 function ProfileCard() {
   const { user } = useAuth();
-  const { name: petName, stage, level, streakDays, sparks, stats } = usePet();
+  const { name: petName, stage, level, streakDays, sparks } = usePet();
   if (!user) return null;
   const since = new Date(user.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   return (
     <View style={styles.profile}>
       <View style={styles.avatar}>
-        <MimoCharacter size={70} mood={bearMood(stats)} />
+        <MimoPet size={70} />
       </View>
       <Text style={styles.name}>{user.name}</Text>
       <Text style={styles.email}>{user.email}</Text>
