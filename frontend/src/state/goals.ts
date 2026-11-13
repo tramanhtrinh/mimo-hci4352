@@ -65,6 +65,15 @@ export const WEEKENDS = [true, false, false, false, false, false, true];
 
 export const todayIndex = () => new Date().getDay();
 
+/** Date of this week's Sunday, used to tell when saved check-ins belong to an older week. */
+export function currentWeekKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  return d.toDateString();
+}
+
+export const EMPTY_WEEK: DayStatus[] = [null, null, null, null, null, null, null];
+
 const sameDays = (a: boolean[], b: boolean[]) => a.every((d, i) => d === b[i]);
 
 export function frequencyLabel(days: boolean[]) {

@@ -9,6 +9,7 @@ import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
+import { useAuth } from '@/state/auth';
 import { isScheduledToday } from '@/state/goals';
 import { bearMood, currentNeed, levelFor, type Need, usePet } from '@/state/pet';
 
@@ -57,15 +58,23 @@ export default function HomeScreen() {
 
 function Header() {
   const { name, streakDays, stats } = usePet();
+  const { user } = useAuth();
+  const firstName = user?.name.split(' ')[0];
 
   return (
     <View style={styles.header}>
-      <View style={styles.avatar}>
-        <MimoCharacter size={32} mood={bearMood(stats)} />
-      </View>
+      <Link href="/account" asChild>
+        <Pressable style={styles.avatar} accessibilityLabel="Account" hitSlop={6}>
+          <MimoCharacter size={32} mood={bearMood(stats)} />
+        </Pressable>
+      </Link>
       <View style={styles.headerText}>
-        <Text style={styles.petName}>{name}</Text>
-        <Text style={styles.streak}>{streakDays}-day phone-free streak</Text>
+        <Text style={styles.petName} numberOfLines={1}>
+          Hi, {firstName}
+        </Text>
+        <Text style={styles.streak} numberOfLines={1}>
+          {name} · {streakDays}-day phone-free streak
+        </Text>
       </View>
       <SparksPill />
     </View>

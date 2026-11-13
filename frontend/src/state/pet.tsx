@@ -1,6 +1,17 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
 
-import { type Goal, type GoalDraft, INITIAL_GOALS, isScheduledToday, todayIndex, todayStatus } from '@/state/goals';
+import { petStorageKey } from '@/state/auth';
+import {
+  currentWeekKey,
+  EMPTY_WEEK,
+  type Goal,
+  type GoalDraft,
+  INITIAL_GOALS,
+  isScheduledToday,
+  todayIndex,
+  todayStatus,
+} from '@/state/goals';
 
 /**
  * In-memory pet state for the demo.
@@ -106,6 +117,33 @@ const initialState: State = {
   goals: INITIAL_GOALS,
 };
 
+/** Brand-new accounts start from scratch: a young Mimo and no goals yet. */
+const newUserState: State = {
+  ...initialState,
+  streakDays: 0,
+  sparks: 20,
+  xp: 0,
+  phoneFreeMinutes: 0,
+  stats: { mood: 60, energy: 38, hunger: 55 },
+  goals: [],
+};
+
+/** The parts of state worth keeping between visits. */
+type SavedState = Pick<State, 'streakDays' | 'sparks' | 'xp' | 'phoneFreeMinutes' | 'dailyGoalMinutes' | 'stats' | 'goals'> & {
+  weekKey: string;
+};
+
+function toSaved(state: State): SavedState {
+  const { streakDays, sparks, xp, phoneFreeMinutes, dailyGoalMinutes, stats, goals } = state;
+  return { streakDays, sparks, xp, phoneFreeMinutes, dailyGoalMinutes, stats, goals, weekKey: currentWeekKey() };
+}
+
+function fromSaved(saved: SavedState): State {
+  // Check-ins from an earlier week don't carry over into this week's dots.
+  const goals = saved.weekKey === currentWeekKey() ? saved.goals : saved.goals.map((g) => ({ ...g, week: EMPTY_WEEK }));
+  return { ...initialState, ...saved, goals };
+}
+
 type Action =
   | { type: 'ritual'; id: RitualId }
   | { type: 'checkIn'; id: string; status: 'done' | 'skipped' }
@@ -114,7 +152,8 @@ type Action =
   | { type: 'setFocusing'; focusing: boolean }
   | { type: 'finishFocus'; minutes: number; peeks: number; early: boolean }
   | { type: 'decay' }
-  | { type: 'clearFeedback' };
+  | { type: 'clearFeedback' }
+  | { type: 'load'; state: State };
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
@@ -205,7 +244,7 @@ function reducer(state: State, action: Action): State {
           message: 'Goal updated. Adjusting is part of the process!',
         };
       }
-      const goal: Goal = { ...draft, id: `goal-${Date.now()}`, streak: 0, week: [null, null, null, null, null, null, null] };
+      const goal: Goal = { ...draft, id: `goal-${Date.now()}`, streak: 0, week: EMPTY_WEEK };
       return { ...state, goals: [...state.goals, goal], message: 'New goal set. Mimo believes in you!' };
     }
     case 'deleteGoal':
@@ -255,6 +294,8 @@ function reducer(state: State, action: Action): State {
     }
     case 'clearFeedback':
       return { ...state, deltas: {}, message: null };
+    case 'load':
+      return action.state;
   }
 }
 
@@ -278,8 +319,37 @@ type PetContextValue = State & {
 
 const PetContext = createContext<PetContextValue | null>(null);
 
-export function PetProvider({ children }: { children: ReactNode }) {
+type PetProviderProps = {
+  userId: string;
+  /** The companion's name, chosen by the user at sign-up. */
+  petName: string;
+  children: ReactNode;
+};
+
+/** Holds one user's pet, goals and sparks, saved on the device under their account. */
+export function PetProvider({ userId, petName, children }: PetProviderProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(petStorageKey(userId))
+      .then((raw) => {
+        if (cancelled) return;
+        const fresh = userId === 'demo' ? initialState : newUserState;
+        dispatch({ type: 'load', state: raw ? fromSaved(JSON.parse(raw)) : fresh });
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLoaded(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    AsyncStorage.setItem(petStorageKey(userId), JSON.stringify(toSaved(state))).catch(() => {});
+  }, [loaded, state, userId]);
 
   const doRitual = useCallback((id: RitualId) => dispatch({ type: 'ritual', id }), []);
   const checkIn = useCallback(
@@ -311,6 +381,7 @@ export function PetProvider({ children }: { children: ReactNode }) {
     const { level, stage, next } = levelFor(state.xp);
     return {
       ...state,
+      name: petName,
       level,
       stage,
       nextLevel: next,
@@ -322,8 +393,9 @@ export function PetProvider({ children }: { children: ReactNode }) {
       finishFocus,
       clearFeedback,
     };
-  }, [state, doRitual, checkIn, saveGoal, deleteGoal, setFocusing, finishFocus, clearFeedback]);
+  }, [state, petName, doRitual, checkIn, saveGoal, deleteGoal, setFocusing, finishFocus, clearFeedback]);
 
+  if (!loaded) return null;
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 }
 

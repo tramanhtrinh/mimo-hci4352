@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { Palette } from '@/constants/theme';
-import { PetProvider } from '@/state/pet';
+import { AuthProvider } from '@/state/auth';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,15 +31,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={theme}>
-      <PetProvider>
+      <AuthProvider>
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Palette.paper } }}>
           <Stack.Screen name="index" />
-          <Stack.Screen name="(tabs)" />
-          {/* no swipe-back mid-session; the session has its own way out */}
-          <Stack.Screen name="focus" options={{ gestureEnabled: false, animation: 'fade' }} />
-          <Stack.Screen name="goal-editor" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="(app)" options={{ animation: 'fade' }} />
         </Stack>
-      </PetProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
