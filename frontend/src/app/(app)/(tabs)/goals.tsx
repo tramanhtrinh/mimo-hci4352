@@ -6,6 +6,7 @@ import { GoalCard } from '@/components/mimo/goal-card';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { SparksPill } from '@/components/mimo/sparks-pill';
+import { WeeklyFlow } from '@/components/mimo/weekly-flow';
 import { HandFonts, Palette } from '@/constants/theme';
 import { isScheduledToday, todayIndex } from '@/state/goals';
 import { usePet } from '@/state/pet';
@@ -25,6 +26,8 @@ export default function GoalsScreen() {
         </View>
 
         <WeekSummary />
+
+        <WeeklyFlow />
 
         <Pressable onPress={newGoal} style={({ pressed }) => [styles.newGoal, pressed && styles.pressed]}>
           <Text style={styles.newGoalText}>+ Create a goal</Text>

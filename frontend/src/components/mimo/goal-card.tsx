@@ -5,6 +5,7 @@ import { HandFonts, Palette } from '@/constants/theme';
 import {
   DAY_LETTERS,
   describeGoal,
+  formatTime,
   frequencyLabel,
   type Goal,
   isScheduledToday,
@@ -39,6 +40,7 @@ export function GoalCard({ goal, compact }: Props) {
 
       <View style={styles.meta}>
         <Tag label={frequencyLabel(goal.days)} />
+        {goal.time != null && <Tag label={formatTime(goal.time)} />}
         <Tag label={`+${goal.reward} sparks`} />
         {!!goal.personalReward && <Tag label={`+ ${goal.personalReward}`} />}
         {goal.streak > 0 && <Tag label={`${goal.streak}-day streak`} ink />}

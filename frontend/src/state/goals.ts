@@ -19,6 +19,8 @@ export type Goal = {
   minutes: number;
   /** Which days the goal is active, Sunday first. */
   days: boolean[];
+  /** Optional clock time in minutes after midnight (e.g. 990 = 4:30 PM). Older saved goals may not have it. */
+  time?: number | null;
   /** Sparks earned for Mimo on each kept day. */
   reward: number;
   /** Something the user promises themselves, e.g. "read a chapter". */
@@ -33,7 +35,7 @@ export type Goal = {
 export type GoalDraft = Omit<Goal, 'id' | 'streak' | 'week'> & { id?: string };
 
 export const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const KIND_LABELS: Record<GoalKind, string> = {
   avoid: 'Stay off',
@@ -71,6 +73,43 @@ export function currentWeekKey() {
   d.setDate(d.getDate() - d.getDay());
   return d.toDateString();
 }
+
+/** The dates of this week, Sunday first, for the Weekly Flow calendar. */
+export function weekDates() {
+  const start = new Date();
+  start.setDate(start.getDate() - start.getDay());
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return d;
+  });
+}
+
+/** 990 → "4:30 PM". */
+export function formatTime(minutes: number) {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  const suffix = h < 12 ? 'AM' : 'PM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+/** Steps for the time picker, and where it starts for each time of day. */
+export const TIME_STEP = 30;
+export const SUGGESTED_TIME: Record<TimeOfDay, number> = {
+  morning: 7 * 60 + 30,
+  study: 16 * 60,
+  meals: 18 * 60 + 30,
+  bed: 22 * 60 + 30,
+  anytime: 12 * 60,
+};
+
+/** Where a goal sits in the day: its own time if set, otherwise a rough slot for its time of day. */
+export const sortTime = (g: Pick<Goal, 'time' | 'when'>) =>
+  g.time ?? (g.when === 'anytime' ? 24 * 60 : SUGGESTED_TIME[g.when]);
+
+/** What the time pill in the Weekly Flow shows: the clock time, or the time of day. */
+export const timeLabel = (g: Pick<Goal, 'time' | 'when'>) => (g.time != null ? formatTime(g.time) : WHEN_LABELS[g.when]);
 
 export const EMPTY_WEEK: DayStatus[] = [null, null, null, null, null, null, null];
 
@@ -136,6 +175,7 @@ export const TEMPLATES: (GoalDraft & { label: string })[] = [
     when: 'bed',
     minutes: 30,
     days: EVERY_DAY,
+    time: 22 * 60 + 30,
     reward: 20,
     personalReward: '',
     why: '',
@@ -148,6 +188,7 @@ export const TEMPLATES: (GoalDraft & { label: string })[] = [
     when: 'meals',
     minutes: 30,
     days: EVERY_DAY,
+    time: 18 * 60 + 30,
     reward: 20,
     personalReward: '',
     why: '',
@@ -160,6 +201,7 @@ export const TEMPLATES: (GoalDraft & { label: string })[] = [
     when: 'anytime',
     minutes: 45,
     days: EVERY_DAY,
+    time: null,
     reward: 20,
     personalReward: '',
     why: '',
@@ -172,8 +214,35 @@ export const TEMPLATES: (GoalDraft & { label: string })[] = [
     when: 'study',
     minutes: 60,
     days: WEEKDAYS,
+    time: 16 * 60,
     reward: 30,
     personalReward: '',
+    why: '',
+  },
+  {
+    label: 'No-scroll wind down',
+    title: 'No-scroll wind down',
+    kind: 'avoid',
+    apps: 'social',
+    when: 'bed',
+    minutes: 30,
+    days: EVERY_DAY,
+    time: 22 * 60 + 30,
+    reward: 20,
+    personalReward: 'read or listen to music instead',
+    why: '',
+  },
+  {
+    label: 'Offline hobby time',
+    title: 'Offline hobby time',
+    kind: 'avoid',
+    apps: 'all',
+    when: 'anytime',
+    minutes: 30,
+    days: [false, true, false, true, false, true, false],
+    time: 16 * 60,
+    reward: 20,
+    personalReward: 'doodling, crafts or journaling',
     why: '',
   },
   {
@@ -184,6 +253,7 @@ export const TEMPLATES: (GoalDraft & { label: string })[] = [
     when: 'anytime',
     minutes: 15,
     days: EVERY_DAY,
+    time: null,
     reward: 20,
     personalReward: '',
     why: '',
@@ -199,6 +269,7 @@ export const INITIAL_GOALS: Goal[] = [
     when: 'bed',
     minutes: 30,
     days: EVERY_DAY,
+    time: 22 * 60 + 30,
     reward: 20,
     personalReward: 'a chapter of my book',
     why: 'I sleep better and wake up less anxious.',
@@ -213,6 +284,7 @@ export const INITIAL_GOALS: Goal[] = [
     when: 'anytime',
     minutes: 15,
     days: EVERY_DAY,
+    time: null,
     reward: 20,
     personalReward: '',
     why: '',
@@ -227,6 +299,7 @@ export const INITIAL_GOALS: Goal[] = [
     when: 'meals',
     minutes: 45,
     days: WEEKDAYS,
+    time: 18 * 60 + 30,
     reward: 15,
     personalReward: '',
     why: 'Actually talk with my roommates.',

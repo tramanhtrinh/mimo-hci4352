@@ -15,12 +15,15 @@ import {
   describeGoal,
   DURATION_OPTIONS,
   EVERY_DAY,
+  formatTime,
   frequencyLabel,
   type GoalDraft,
   type GoalKind,
   KIND_LABELS,
   REWARD_OPTIONS,
+  SUGGESTED_TIME,
   TEMPLATES,
+  TIME_STEP,
   type TimeOfDay,
   WEEKDAYS,
   WEEKENDS,
@@ -41,6 +44,7 @@ const BLANK: GoalDraft = {
   when: 'bed',
   minutes: 30,
   days: EVERY_DAY,
+  time: null,
   reward: 20,
   personalReward: '',
   why: '',
@@ -167,6 +171,36 @@ export default function GoalEditorScreen() {
           </View>
         </Section>
 
+        <Section title="What time?" hint="optional, shows on your Weekly Flow">
+          <View style={styles.wrap}>
+            <ChoiceChip label="No set time" selected={draft.time == null} onPress={() => set({ time: null })} />
+            <ChoiceChip
+              label="Pick a time"
+              selected={draft.time != null}
+              onPress={() => draft.time == null && set({ time: SUGGESTED_TIME[draft.when] })}
+            />
+          </View>
+          {draft.time != null && (
+            <View style={styles.timeRow}>
+              <Pressable
+                onPress={() => set({ time: ((draft.time ?? 0) - TIME_STEP + 24 * 60) % (24 * 60) })}
+                accessibilityLabel="Earlier"
+                hitSlop={8}
+                style={({ pressed }) => [styles.timeStep, pressed && styles.pressed]}>
+                <Text style={styles.timeStepText}>−</Text>
+              </Pressable>
+              <Text style={styles.timeValue}>{formatTime(draft.time)}</Text>
+              <Pressable
+                onPress={() => set({ time: ((draft.time ?? 0) + TIME_STEP) % (24 * 60) })}
+                accessibilityLabel="Later"
+                hitSlop={8}
+                style={({ pressed }) => [styles.timeStep, pressed && styles.pressed]}>
+                <Text style={styles.timeStepText}>+</Text>
+              </Pressable>
+            </View>
+          )}
+        </Section>
+
         <Section title="Your reward" hint="for each day you keep it">
           <View style={styles.wrap}>
             {REWARD_OPTIONS.map((reward) => (
@@ -247,6 +281,11 @@ function Preview({ draft }: { draft: GoalDraft }) {
         <View style={styles.previewChip}>
           <Text style={styles.previewChipText}>{frequencyLabel(draft.days)}</Text>
         </View>
+        {draft.time != null && (
+          <View style={styles.previewChip}>
+            <Text style={styles.previewChipText}>{formatTime(draft.time)}</Text>
+          </View>
+        )}
         <View style={styles.previewChip}>
           <Sparkle size={10} />
           <Text style={styles.previewChipText}>+{draft.reward} sparks</Text>
@@ -402,6 +441,34 @@ const styles = StyleSheet.create({
   days: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+  },
+  timeStep: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Palette.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timeStepText: {
+    fontFamily: HandFonts.bold,
+    fontSize: 24,
+    color: Palette.ink,
+  },
+  timeValue: {
+    minWidth: 120,
+    textAlign: 'center',
+    fontFamily: HandFonts.bold,
+    fontSize: 28,
+    color: Palette.ink,
   },
   input: {
     paddingHorizontal: 14,
