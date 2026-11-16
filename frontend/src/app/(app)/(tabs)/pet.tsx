@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { type ComponentType, useEffect, useRef } from 'react';
+import { type ComponentType, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -43,6 +43,13 @@ const RITUAL_ICONS: Record<RitualId, IconComponent> = {
   feed: AppleIcon,
   play: BallIcon,
 };
+
+/** Snacks Mimo can be offered. Every snack currently runs the normal "feed" ritual. */
+const SNACKS = [
+  { id: 'apple', name: 'Apple', emoji: '🍎' },
+  { id: 'cookie', name: 'Cookie', emoji: '🍪' },
+  { id: 'rice-ball', name: 'Rice ball', emoji: '🍙' },
+];
 
 export default function PetScreen() {
   const { name, level, stage, xp, nextLevel } = usePet();
@@ -186,18 +193,51 @@ function VitalHarmony() {
 }
 
 function CareRituals() {
+  const [picking, setPicking] = useState(false);
+
   return (
     <View style={styles.rituals}>
       <Text style={styles.sectionTitle}>Care Rituals</Text>
       <Text style={styles.sectionHint}>Phone-free time earns sparks. Spend them on Mimo.</Text>
       {RITUALS.map((ritual) => (
-        <RitualCard key={ritual.id} ritual={ritual} />
+        <View key={ritual.id} style={styles.ritualGroup}>
+          <RitualCard ritual={ritual} onFeed={() => setPicking((p) => !p)} />
+          {ritual.id === 'feed' && picking && <SnackPicker cost={ritual.cost} onClose={() => setPicking(false)} />}
+        </View>
       ))}
     </View>
   );
 }
 
-function RitualCard({ ritual }: { ritual: Ritual }) {
+/** Choose which snack to give Mimo. */
+function SnackPicker({ cost, onClose }: { cost: number; onClose: () => void }) {
+  const { doRitual, sparks } = usePet();
+  const affordable = sparks >= cost;
+
+  return (
+    <View style={styles.snackPanel}>
+      <Text style={styles.snackTitle}>Pick a snack</Text>
+      <View style={styles.snackRow}>
+        {SNACKS.map((snack) => (
+          <Pressable
+            key={snack.id}
+            disabled={!affordable}
+            onPress={() => {
+              doRitual('feed');
+              onClose();
+            }}
+            accessibilityLabel={`Feed ${snack.name}`}
+            style={({ pressed }) => [styles.snack, !affordable && styles.snackOff, pressed && styles.ritualPressed]}>
+            <Text style={styles.snackEmoji}>{snack.emoji}</Text>
+            <Text style={styles.snackName}>{snack.name}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function RitualCard({ ritual, onFeed }: { ritual: Ritual; onFeed: () => void }) {
   const { doRitual, sparks } = usePet();
   const Icon = RITUAL_ICONS[ritual.id];
   const affordable = sparks >= ritual.cost;
@@ -205,7 +245,7 @@ function RitualCard({ ritual }: { ritual: Ritual }) {
 
   return (
     <Pressable
-      onPress={() => (featured ? router.push('/focus') : doRitual(ritual.id))}
+      onPress={() => (featured ? router.push('/focus') : ritual.id === 'feed' ? onFeed() : doRitual(ritual.id))}
       accessibilityLabel={ritual.title}
       style={({ pressed }) => [styles.ritual, pressed && styles.ritualPressed]}>
       <View style={styles.ritualIcon}>
@@ -528,6 +568,48 @@ const styles = StyleSheet.create({
   },
   ritualCostShort: {
     color: Palette.muted,
+  },
+  ritualGroup: {
+    gap: 10,
+  },
+  snackPanel: {
+    gap: 10,
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    borderStyle: 'dashed',
+    backgroundColor: Palette.white,
+  },
+  snackTitle: {
+    fontFamily: HandFonts.bold,
+    fontSize: 18,
+    color: Palette.ink,
+  },
+  snackRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  snack: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Palette.paper,
+  },
+  snackOff: {
+    opacity: 0.4,
+  },
+  snackEmoji: {
+    fontSize: 30,
+  },
+  snackName: {
+    fontFamily: HandFonts.bold,
+    fontSize: 15,
+    color: Palette.ink,
   },
   goButton: {
     width: 34,
