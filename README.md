@@ -4,6 +4,8 @@ mimo is a mobile app prototype (HCI 4352) that helps people use their phone less
 
 The prototype is built with **React Native + Expo** and runs in a **web browser** (best viewed at phone size) or on a phone through the **Expo Go** app.
 
+demo video: https://youtu.be/N48mhrgehQY
+
 ---
 
 ## Quick start
