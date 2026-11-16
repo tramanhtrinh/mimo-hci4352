@@ -10,9 +10,12 @@ import { HandFonts, Palette, Pastel, Tint } from '@/constants/theme';
 import { usePet } from '@/state/pet';
 
 const ROUND_SECONDS = 15;
-const TARGET_CENTER = 155;
-const BALL_MIN_X = 32;
-const BALL_MAX_X = 250;
+const BALL_SIZE = 52;
+const TARGET_SIZE = 54;
+const HIT_TOLERANCE = 24;
+const TARGET_CENTER = 170;
+const BALL_MIN_X = 74;
+const BALL_MAX_X = 266;
 
 export default function PlayScreen() {
   const { playMiniGame } = usePet();
@@ -21,6 +24,7 @@ export default function PlayScreen() {
   const [score, setScore] = useState(0);
   const [ballX, setBallX] = useState(BALL_MIN_X);
   const [message, setMessage] = useState('Tap when the yarn is in the catch ring.');
+  const [catchState, setCatchState] = useState<'idle' | 'hit' | 'miss'>('idle');
   const directionRef = useRef(1);
 
   useEffect(() => {
@@ -66,10 +70,21 @@ export default function PlayScreen() {
     playMiniGame(score);
   }, [phase, playMiniGame, score]);
 
+  useEffect(() => {
+    if (catchState === 'idle') return;
+
+    const timeout = setTimeout(() => {
+      setCatchState('idle');
+    }, 420);
+
+    return () => clearTimeout(timeout);
+  }, [catchState]);
+
   const catchYarn = () => {
     if (phase !== 'playing') return;
 
-    const hit = Math.abs(ballX - TARGET_CENTER) < 38;
+    const hit = Math.abs(ballX - TARGET_CENTER) <= HIT_TOLERANCE;
+    setCatchState(hit ? 'hit' : 'miss');
     setScore((current) => (hit ? current + 1 : current));
     setMessage(hit ? 'Nice catch! Mimo is delighted!' : 'Too early or too late. Try again!');
 
@@ -118,6 +133,17 @@ export default function PlayScreen() {
           <View style={styles.catchTarget} />
         </View>
 
+        {catchState !== 'idle' && (
+          <View
+            style={[
+              styles.catchBadge,
+              catchState === 'hit' ? styles.catchBadgeHit : styles.catchBadgeMiss,
+            ]}
+          >
+            <Text style={styles.catchBadgeText}>{catchState === 'hit' ? 'Caught!' : 'Miss!'}</Text>
+          </View>
+        )}
+
         <View style={styles.mimoLane}>
           <MimoPet size={124} />
         </View>
@@ -126,14 +152,22 @@ export default function PlayScreen() {
           style={[
             styles.yarnBall,
             {
-              transform: [{ translateX: ballX }],
+              left: ballX - BALL_SIZE / 2,
+              transform: [{ scale: catchState === 'hit' ? 1.18 : 1 }],
             },
           ]}
         >
           <Text style={styles.yarnText}>🧶</Text>
         </Animated.View>
 
-        <View style={[styles.targetRing, { left: TARGET_CENTER }]} />
+        <View
+          style={[
+            styles.targetRing,
+            { left: TARGET_CENTER - TARGET_SIZE / 2 },
+            catchState === 'hit' && styles.targetRingHit,
+            catchState === 'miss' && styles.targetRingMiss,
+          ]}
+        />
       </View>
 
       <View style={styles.footer}>
@@ -200,10 +234,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Palette.white,
     borderRadius: 999,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 2,
     borderColor: Palette.ink,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   scoreLabel: {
     fontFamily: HandFonts.bold,
@@ -279,7 +317,6 @@ const styles = StyleSheet.create({
   },
   yarnBall: {
     position: 'absolute',
-    left: 20,
     bottom: 136,
     width: 52,
     height: 52,
@@ -306,7 +343,45 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: Palette.ink,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    transform: [{ translateX: -26 }],
+  },
+  targetRingHit: {
+    borderColor: '#2f9d65',
+    backgroundColor: 'rgba(115, 220, 170, 0.45)',
+    shadowColor: '#2f9d65',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  targetRingMiss: {
+    borderColor: '#d75d5d',
+    backgroundColor: 'rgba(255, 165, 165, 0.28)',
+    shadowColor: '#d75d5d',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  catchBadge: {
+    position: 'absolute',
+    top: 18,
+    left: '50%',
+    transform: [{ translateX: -50 }],
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    zIndex: 2,
+  },
+  catchBadgeHit: {
+    backgroundColor: '#dff7e9',
+  },
+  catchBadgeMiss: {
+    backgroundColor: '#ffe1e1',
+  },
+  catchBadgeText: {
+    fontFamily: HandFonts.bold,
+    fontSize: 12,
+    letterSpacing: 1,
+    color: Palette.ink,
+    textTransform: 'uppercase',
   },
   footer: {
     paddingTop: 18,
