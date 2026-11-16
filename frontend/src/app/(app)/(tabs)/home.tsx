@@ -5,10 +5,11 @@ import Svg, { Path } from 'react-native-svg';
 
 import { Sparkle } from '@/components/mimo/decorations';
 import { GoalCard } from '@/components/mimo/goal-card';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoPet } from '@/components/mimo/mimo-pet';
 import { SparksPill } from '@/components/mimo/sparks-pill';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { useAuth } from '@/state/auth';
 import { isScheduledToday } from '@/state/goals';
 import { currentNeed, levelFor, type Need, usePet } from '@/state/pet';
@@ -30,7 +31,7 @@ export default function HomeScreen() {
         <TodayCard />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today&apos;s Mindful Goals</Text>
+          <HighlightTitle>Today&apos;s Mindful Goals</HighlightTitle>
           <Link href="/goals" asChild>
             <Pressable hitSlop={12} accessibilityRole="link" accessibilityLabel="View all goals">
               <Text style={styles.viewAll}>View All →</Text>
@@ -86,8 +87,8 @@ function PetCard() {
   const need = currentNeed(stats);
   const growth = nextLevel ? (xp - levelFor(xp).xp) / (nextLevel.xp - levelFor(xp).xp) : 1;
   const shownStats = [
-    { label: 'HAPPINESS', value: stats.mood },
-    { label: 'ENERGY', value: stats.energy },
+    { label: 'HAPPINESS', value: stats.mood, color: Pastel.blush },
+    { label: 'ENERGY', value: stats.energy, color: Pastel.blush },
   ];
 
   return (
@@ -128,7 +129,7 @@ function PetCard() {
             {nextLevel ? `${nextLevel.xp - xp} to ${nextLevel.stage}` : 'fully grown'}
           </Text>
         </View>
-        <HatchedProgress value={growth} duration={900} />
+        <HatchedProgress value={growth} duration={900} color={Pastel.butter} />
       </View>
 
       <View style={styles.stats}>
@@ -138,7 +139,7 @@ function PetCard() {
               <Text style={styles.statLabel}>{stat.label}</Text>
               <Text style={styles.statLabel}>{stat.value}%</Text>
             </View>
-            <HatchedProgress value={stat.value / 100} duration={900} />
+            <HatchedProgress value={stat.value / 100} duration={900} color={stat.color} />
           </View>
         ))}
       </View>
@@ -154,12 +155,12 @@ function TodayCard() {
   return (
     <View style={styles.today}>
       <View style={styles.statLabels}>
-        <Text style={styles.todayTitle}>Phone-free today</Text>
+        <HighlightTitle textStyle={styles.todayTitle}>Phone-free today</HighlightTitle>
         <Text style={styles.todayValue}>
           {phoneFreeMinutes} / {dailyGoalMinutes} min
         </Text>
       </View>
-      <HatchedProgress value={Math.min(1, phoneFreeMinutes / dailyGoalMinutes)} duration={900} />
+      <HatchedProgress value={Math.min(1, phoneFreeMinutes / dailyGoalMinutes)} duration={900} color={Pastel.butter} />
       <Text style={styles.todayHint}>
         {left > 0
           ? `${left} more minutes keeps your streak and ${name}'s energy up.`
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
   todayHint: {
     fontFamily: HandFonts.regular,
     fontSize: 15,
-    color: Palette.muted,
+    color: Palette.ink,
   },
 
   sectionHeader: {
@@ -354,11 +355,6 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'space-between',
     marginTop: 6,
-  },
-  sectionTitle: {
-    fontFamily: HandFonts.bold,
-    fontSize: 24,
-    color: Palette.ink,
   },
   viewAll: {
     fontFamily: HandFonts.bold,

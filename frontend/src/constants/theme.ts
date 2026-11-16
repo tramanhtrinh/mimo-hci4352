@@ -19,6 +19,17 @@ export const Palette = {
   muted: '#696865',
 } as const;
 
+/**
+ * Two soft accents point the eye at what matters. They are only ever used as
+ * backgrounds behind ink text (never as text colors), so contrast stays high.
+ */
+export const Pastel = {
+  /** Primary, the sparks color: highlighted titles, today's target, and anything earned or kept. */
+  butter: '#FFEFA8',
+  /** Secondary, Mimo's color: its speech, its portrait and its happiness and energy. */
+  blush: '#FFD9CF',
+} as const;
+
 // Light and dark intentionally share the same palette so the look stays consistent.
 const scheme = {
   text: Palette.ink,

@@ -10,10 +10,12 @@ type Props = {
   /** How long the bar takes to fill, in milliseconds. */
   duration?: number;
   onComplete?: () => void;
+  /** Optional pastel shown under the hatching, to tell bars apart at a glance. */
+  color?: string;
 };
 
 /** A rounded loading bar filled with diagonal hatching, like a pen sketch. */
-export function HatchedProgress({ value = 1, duration = 2800, onComplete }: Props) {
+export function HatchedProgress({ value = 1, duration = 2800, onComplete, color }: Props) {
   const progress = useRef(new Animated.Value(0)).current;
   // Pattern ids are document-global on web, and screens stay mounted underneath each other,
   // so each bar needs its own id or it may pick up a hidden screen's pattern.
@@ -34,7 +36,7 @@ export function HatchedProgress({ value = 1, duration = 2800, onComplete }: Prop
 
   return (
     <View style={styles.track}>
-      <Animated.View style={[styles.fill, { width }]}>
+      <Animated.View style={[styles.fill, { width }, color != null && { backgroundColor: color }]}>
         <Svg width="100%" height="100%">
           <Defs>
             <Pattern id={patternId} width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">

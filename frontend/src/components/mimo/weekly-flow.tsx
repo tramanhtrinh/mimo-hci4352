@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import {
   DAY_NAMES,
   describeGoal,
@@ -89,7 +89,10 @@ function FlowItem({ goal, status }: { goal: Goal; status: DayStatus }) {
     <Pressable
       onPress={edit}
       accessibilityLabel={`${timeLabel(goal)}: ${goal.title}. Tap to edit.`}
-      style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
+      style={({ pressed }) => [
+        styles.item,
+        pressed && styles.pressed,
+      ]}>
       <View style={[styles.timePill, !timed && styles.timePillLoose]}>
         <Text style={[styles.timeText, !timed && styles.timeTextLoose]} numberOfLines={1}>
           {timeLabel(goal)}
@@ -101,7 +104,11 @@ function FlowItem({ goal, status }: { goal: Goal; status: DayStatus }) {
           {goal.personalReward ? `${describeGoal(goal)} · ${goal.personalReward}` : describeGoal(goal)}
         </Text>
       </View>
-      {status && <Text style={styles.status}>{status === 'done' ? '✓' : '–'}</Text>}
+      {status && (
+        <View style={[styles.statusBadge, status === 'done' && styles.statusDone]}>
+          <Text style={styles.status}>{status === 'done' ? '✓' : '–'}</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -194,7 +201,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 2,
     borderColor: Palette.ink,
-    backgroundColor: Palette.paper,
+    backgroundColor: Palette.white,
   },
   timePill: {
     minWidth: 76,
@@ -230,7 +237,19 @@ const styles = StyleSheet.create({
   itemLine: {
     fontFamily: HandFonts.regular,
     fontSize: 14,
-    color: Palette.muted,
+    color: Palette.ink,
+  },
+  statusBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusDone: {
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Pastel.butter,
   },
   status: {
     fontFamily: HandFonts.bold,

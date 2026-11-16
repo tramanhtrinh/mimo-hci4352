@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HandFonts, Palette } from '@/constants/theme';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import {
   DAY_LETTERS,
   describeGoal,
@@ -27,10 +28,18 @@ export function GoalCard({ goal, compact }: Props) {
   const edit = () => router.push({ pathname: '/goal-editor', params: { id: goal.id } });
 
   return (
-    <View style={[styles.card, status === 'done' && styles.cardDone]}>
+    <View
+      style={[
+        styles.card,
+        // Not scheduled today sinks into the page, so today's goals stand out.
+        { backgroundColor: scheduled ? Palette.white : Palette.paper },
+      ]}>
       <View style={styles.top}>
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>{goal.title}</Text>
+          {/* A kept goal gets the sparks-yellow highlighter, like ticking it off a list. */}
+          <HighlightTitle on={status === 'done'} header={false} textStyle={styles.title}>
+            {goal.title}
+          </HighlightTitle>
           <Text style={styles.line}>{describeGoal(goal)}</Text>
         </View>
         <Pressable onPress={edit} hitSlop={8} accessibilityLabel={`Edit ${goal.title}`} style={styles.editButton}>
@@ -41,7 +50,7 @@ export function GoalCard({ goal, compact }: Props) {
       <View style={styles.meta}>
         <Tag label={frequencyLabel(goal.days)} />
         {goal.time != null && <Tag label={formatTime(goal.time)} />}
-        <Tag label={`+${goal.reward} sparks`} />
+        <Tag label={`+${goal.reward} sparks`} sparks />
         {!!goal.personalReward && <Tag label={`+ ${goal.personalReward}`} />}
         {goal.streak > 0 && <Tag label={`${goal.streak}-day streak`} ink />}
       </View>
@@ -150,9 +159,9 @@ function WeekDots({ goal }: { goal: Goal }) {
   );
 }
 
-function Tag({ label, ink }: { label: string; ink?: boolean }) {
+function Tag({ label, ink, sparks }: { label: string; ink?: boolean; sparks?: boolean }) {
   return (
-    <View style={[styles.tag, ink && styles.tagInk]}>
+    <View style={[styles.tag, sparks && styles.tagSparks, ink && styles.tagInk]}>
       <Text style={[styles.tagText, ink && styles.tagTextInk]}>{label}</Text>
     </View>
   );
@@ -166,9 +175,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Palette.ink,
     backgroundColor: Palette.white,
-  },
-  cardDone: {
-    backgroundColor: Palette.paper,
   },
   top: {
     flexDirection: 'row',
@@ -194,12 +200,13 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Palette.muted,
+    borderColor: Palette.ink,
+    backgroundColor: Palette.white,
   },
   editText: {
     fontFamily: HandFonts.bold,
     fontSize: 14,
-    color: Palette.muted,
+    color: Palette.ink,
   },
   meta: {
     flexDirection: 'row',
@@ -212,7 +219,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: Palette.ink,
-    backgroundColor: Palette.paper,
+    backgroundColor: Palette.white,
+  },
+  tagSparks: {
+    backgroundColor: Pastel.butter,
   },
   tagInk: {
     backgroundColor: Palette.ink,
@@ -228,7 +238,7 @@ const styles = StyleSheet.create({
   why: {
     fontFamily: HandFonts.regular,
     fontSize: 16,
-    color: Palette.muted,
+    color: Palette.ink,
   },
 
   week: {
@@ -249,14 +259,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dotOff: {
-    borderColor: Palette.shade,
+    borderColor: Palette.ink,
+    opacity: 0.25,
   },
   dotDone: {
     backgroundColor: Palette.ink,
   },
   dotSkipped: {
     borderStyle: 'dashed',
-    borderColor: Palette.muted,
+    backgroundColor: Palette.white,
   },
   dotToday: {
     borderWidth: 3,
@@ -264,7 +275,7 @@ const styles = StyleSheet.create({
   dotMark: {
     fontFamily: HandFonts.bold,
     fontSize: 14,
-    color: Palette.muted,
+    color: Palette.ink,
   },
   dotMarkDone: {
     color: Palette.white,
@@ -272,7 +283,7 @@ const styles = StyleSheet.create({
   dayLetter: {
     fontFamily: HandFonts.regular,
     fontSize: 13,
-    color: Palette.muted,
+    color: Palette.ink,
   },
   dayLetterToday: {
     fontFamily: HandFonts.bold,
@@ -305,6 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: Palette.ink,
+    backgroundColor: Palette.white,
   },
   secondaryText: {
     fontFamily: HandFonts.bold,
@@ -321,20 +333,22 @@ const styles = StyleSheet.create({
   },
   keptPill: {
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 3,
     borderRadius: 14,
-    backgroundColor: Palette.ink,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Pastel.butter,
   },
   keptText: {
     fontFamily: HandFonts.bold,
     fontSize: 15,
-    color: Palette.white,
+    color: Palette.ink,
   },
   skippedText: {
     flex: 1,
     fontFamily: HandFonts.bold,
     fontSize: 16,
-    color: Palette.muted,
+    color: Palette.ink,
   },
   linkText: {
     fontFamily: HandFonts.bold,
@@ -345,6 +359,6 @@ const styles = StyleSheet.create({
   restDay: {
     fontFamily: HandFonts.regular,
     fontSize: 15,
-    color: Palette.muted,
+    color: Palette.ink,
   },
 });

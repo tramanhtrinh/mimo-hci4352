@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Sparkle } from '@/components/mimo/decorations';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { usePet } from '@/state/pet';
 
 /** Shows the current spark balance. Sparks are earned by finishing goals. */
@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 2,
     borderColor: Palette.ink,
-    backgroundColor: Palette.white,
+    backgroundColor: Pastel.butter,
   },
   text: {
     fontFamily: HandFonts.bold,

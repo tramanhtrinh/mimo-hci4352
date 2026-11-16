@@ -4,10 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoalCard } from '@/components/mimo/goal-card';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { SparksPill } from '@/components/mimo/sparks-pill';
 import { WeeklyFlow } from '@/components/mimo/weekly-flow';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { isScheduledToday, todayIndex } from '@/state/goals';
 import { usePet } from '@/state/pet';
 
@@ -42,7 +43,7 @@ export default function GoalsScreen() {
           </View>
         )}
 
-        {today.length > 0 && <Text style={styles.sectionTitle}>Today</Text>}
+        {today.length > 0 && <HighlightTitle>Today</HighlightTitle>}
         {today.map((goal) => (
           <GoalCard key={goal.id} goal={goal} />
         ))}
@@ -80,7 +81,7 @@ function WeekSummary() {
           {kept} / {scheduled} kept
         </Text>
       </View>
-      <HatchedProgress value={scheduled ? kept / scheduled : 0} duration={900} />
+      <HatchedProgress value={scheduled ? kept / scheduled : 0} duration={900} color={Pastel.butter} />
       <Text style={styles.summaryHint}>
         You set these goals, so you decide what&apos;s realistic. Missed one? Make it easier and keep going.
       </Text>
