@@ -7,7 +7,7 @@
 /** avoid: stay off something for a stretch of time. limit: keep it under a budget. rest: a phone-free session with Mimo. */
 export type GoalKind = 'avoid' | 'limit' | 'rest';
 export type AppGroup = 'social' | 'video' | 'games' | 'all';
-export type TimeOfDay = 'bed' | 'morning' | 'meals' | 'study' | 'anytime';
+export type TimeOfDay = 'bed' | 'morning' | 'meals' | 'study' | 'practice' | 'game' | 'anytime';
 export type DayStatus = 'done' | 'skipped' | null;
 
 export type Goal = {
@@ -55,6 +55,8 @@ export const WHEN_LABELS: Record<TimeOfDay, string> = {
   morning: 'After waking',
   meals: 'During meals',
   study: 'While studying',
+  practice: 'Before practice',
+  game: 'Before a game',
   anytime: 'Any time',
 };
 
@@ -99,6 +101,8 @@ export const TIME_STEP = 30;
 export const SUGGESTED_TIME: Record<TimeOfDay, number> = {
   morning: 7 * 60 + 30,
   study: 16 * 60,
+  practice: 15 * 60 + 30,
+  game: 17 * 60 + 30,
   meals: 18 * 60 + 30,
   bed: 22 * 60 + 30,
   anytime: 12 * 60,
@@ -135,6 +139,8 @@ const WHEN_PHRASE: Record<TimeOfDay, string> = {
   morning: 'after waking up',
   meals: 'during meals',
   study: 'while studying',
+  practice: 'before practice',
+  game: 'before a game',
   anytime: '',
 };
 
@@ -215,6 +221,19 @@ export const TEMPLATES: (GoalDraft & { label: string })[] = [
     minutes: 60,
     days: WEEKDAYS,
     time: 16 * 60,
+    reward: 30,
+    personalReward: '',
+    why: '',
+  },
+  {
+    label: 'Game-day focus',
+    title: 'Game-day focus',
+    kind: 'avoid',
+    apps: 'social',
+    when: 'game',
+    minutes: 60,
+    days: WEEKENDS,
+    time: 17 * 60 + 30,
     reward: 30,
     personalReward: '',
     why: '',
