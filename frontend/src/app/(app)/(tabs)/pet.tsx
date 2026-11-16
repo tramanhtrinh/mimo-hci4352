@@ -240,7 +240,15 @@ function RitualCard({ ritual, onFeed }: { ritual: Ritual; onFeed: () => void }) 
 
   return (
     <Pressable
-      onPress={() => (featured ? router.push('/focus') : ritual.id === 'feed' ? onFeed() : doRitual(ritual.id))}
+      onPress={() =>
+        featured
+          ? router.push('/focus')
+          : ritual.id === 'feed'
+            ? onFeed()
+            : ritual.id === 'play'
+              ? router.push('/play')
+              : doRitual(ritual.id)
+      }
       accessibilityLabel={ritual.title}
       style={({ pressed }) => [styles.ritual, pressed && styles.ritualPressed]}>
       <View style={styles.ritualIcon}>

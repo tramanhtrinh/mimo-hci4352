@@ -18,6 +18,7 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" />
         {/* no swipe-back mid-session; the session has its own way out */}
         <Stack.Screen name="focus" options={{ gestureEnabled: false, animation: 'fade' }} />
+        <Stack.Screen name="play" options={{ presentation: 'modal' }} />
         <Stack.Screen name="goal-editor" options={{ presentation: 'modal' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal' }} />
       </Stack>
