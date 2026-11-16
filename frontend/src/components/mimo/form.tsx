@@ -22,12 +22,17 @@ export function Field({ label, password, style, ...input }: FieldProps) {
           autoCapitalize="none"
           autoCorrect={false}
           secureTextEntry={password && hidden}
-          aria-label={label}
+          accessibilityLabel={label}
           style={[styles.input, style]}
           {...input}
         />
         {password && (
-          <Pressable onPress={() => setHidden((h) => !h)} hitSlop={8} style={styles.toggle}>
+          <Pressable
+            onPress={() => setHidden((h) => !h)}
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? `Show ${label.toLowerCase()}` : `Hide ${label.toLowerCase()}`}
+            hitSlop={12}
+            style={styles.toggle}>
             <Text style={styles.toggleText}>{hidden ? 'show' : 'hide'}</Text>
           </Pressable>
         )}

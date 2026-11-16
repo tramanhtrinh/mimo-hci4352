@@ -68,6 +68,7 @@ export default function SignupScreen() {
             value={petName}
             onChangeText={setPetName}
             placeholder="Mimo"
+            accessibilityHint="Optional. Leave it blank to use Mimo."
             autoCapitalize="words"
             maxLength={16}
             onSubmitEditing={submit}

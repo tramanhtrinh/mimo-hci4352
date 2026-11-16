@@ -32,7 +32,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today&apos;s Mindful Goals</Text>
           <Link href="/goals" asChild>
-            <Pressable hitSlop={8}>
+            <Pressable hitSlop={12} accessibilityRole="link" accessibilityLabel="View all goals">
               <Text style={styles.viewAll}>View All →</Text>
             </Pressable>
           </Link>

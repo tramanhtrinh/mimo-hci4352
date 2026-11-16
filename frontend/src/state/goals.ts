@@ -15,6 +15,8 @@ export type Goal = {
   title: string;
   kind: GoalKind;
   apps: AppGroup;
+  /** Specific apps picked within the group, e.g. ["TikTok"]. Older saved goals don't have it. */
+  appNames?: string[];
   when: TimeOfDay;
   minutes: number;
   /** Which days the goal is active, Sunday first. */
@@ -48,6 +50,14 @@ export const APP_LABELS: Record<AppGroup, string> = {
   video: 'Video apps',
   games: 'Games',
   all: 'All apps',
+};
+
+/** Apps the user can pick within each group. "All apps" has no specific picks. */
+export const APPS_BY_GROUP: Record<AppGroup, string[]> = {
+  social: ['Instagram', 'TikTok', 'Snapchat', 'BeReal'],
+  video: ['YouTube', 'Netflix', 'Twitch'],
+  games: ['Roblox', 'Fortnite', 'Minecraft', 'Clash Royale'],
+  all: [],
 };
 
 export const WHEN_LABELS: Record<TimeOfDay, string> = {
@@ -144,12 +154,19 @@ const WHEN_PHRASE: Record<TimeOfDay, string> = {
   anytime: '',
 };
 
+/** Picked app names, up to two then "+N more": "TikTok and Instagram", "TikTok, Instagram +1 more". */
+function appNamesPhrase(names: string[]) {
+  if (names.length <= 2) return names.join(' and ');
+  return `${names.slice(0, 2).join(', ')} +${names.length - 2} more`;
+}
+
 /** One-line plain-English version of a goal, e.g. "Stay off social media for 30 min before bed". */
-export function describeGoal(g: Pick<Goal, 'kind' | 'apps' | 'when' | 'minutes'>) {
+export function describeGoal(g: Pick<Goal, 'kind' | 'apps' | 'appNames' | 'when' | 'minutes'>) {
   const when = WHEN_PHRASE[g.when];
+  const apps = g.apps !== 'all' && g.appNames?.length ? appNamesPhrase(g.appNames) : APP_PHRASE[g.apps];
   if (g.kind === 'rest') return `Rest phone-free with Mimo for ${g.minutes} min`;
-  if (g.kind === 'limit') return `Keep ${APP_PHRASE[g.apps]} under ${g.minutes} min ${when || 'a day'}`;
-  return `Stay off ${APP_PHRASE[g.apps]} for ${g.minutes} min ${when}`.trim();
+  if (g.kind === 'limit') return `Keep ${apps} under ${g.minutes} min ${when || 'a day'}`;
+  return `Stay off ${apps} for ${g.minutes} min ${when}`.trim();
 }
 
 /** A gentle nudge when a goal looks hard to keep. Small wins build the habit. */

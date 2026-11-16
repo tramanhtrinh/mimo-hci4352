@@ -1,12 +1,24 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoPet } from '@/components/mimo/mimo-pet';
 import { SparksPill } from '@/components/mimo/sparks-pill';
 import { HandFonts, Palette } from '@/constants/theme';
-import { DAY_LETTERS, todayIndex } from '@/state/goals';
+import { APP_LABELS, DAY_LETTERS, todayIndex } from '@/state/goals';
 import { LEVELS, levelFor, usePet } from '@/state/pet';
+import {
+  CATEGORY_SHORT,
+  formatMinutes,
+  categoryTotal,
+  PEAK_USAGE,
+  spokenMinutes,
+  suggestedGoal,
+  topApps,
+  USAGE_CATEGORIES,
+  weekTotal,
+} from '@/state/usage';
 
 // Chart geometry: total height minus top padding, value labels and day labels.
 const CHART_HEIGHT = 160;
@@ -15,7 +27,6 @@ const TRACK_HEIGHT = CHART_HEIGHT - 16 - 16 - LABEL_HEIGHT;
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
 
 /** Reflection on phone-free time: this week, overall, Mimo's growth and milestones. */
 export default function ProgressScreen() {
@@ -27,6 +38,7 @@ export default function ProgressScreen() {
           <SparksPill />
         </View>
         <WeekChart />
+        <PhoneUseCard />
         <StatTiles />
         <GrowthPath />
         <Milestones />
@@ -85,6 +97,77 @@ function WeekChart() {
               }`}
         </Text>
       </View>
+    </View>
+  );
+}
+
+/** This week's (pretend) screen time: where it goes, the top apps, and a nudge to set a goal for the biggest habit. */
+function PhoneUseCard() {
+  const total = weekTotal();
+  const top = topApps(3);
+  const goal = suggestedGoal();
+
+  const makeGoal = () =>
+    router.push({
+      pathname: '/goal-editor',
+      params: { ...goal, appNames: goal.appNames.join(','), minutes: String(goal.minutes) },
+    });
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.row}>
+        <Text style={styles.cardTitle}>Your phone use</Text>
+        <Text style={styles.cardValue} accessibilityLabel={`${spokenMinutes(total)} on your phone this week`}>
+          {formatMinutes(total)} this week
+        </Text>
+      </View>
+
+      {USAGE_CATEGORIES.map((c) => {
+        const minutes = categoryTotal(c);
+        return (
+          <View
+            key={c}
+            style={styles.usageRow}
+            accessible
+            accessibilityLabel={`${APP_LABELS[c]}, ${spokenMinutes(minutes)} this week`}>
+            <Text style={styles.usageLabel}>
+              {CATEGORY_SHORT[c]} · {formatMinutes(minutes)}
+            </Text>
+            <HatchedProgress value={minutes / total} duration={900} />
+          </View>
+        );
+      })}
+
+      <Text style={styles.subTitle}>Top apps</Text>
+      {top.map((app, i) => (
+        <View
+          key={app.name}
+          style={styles.topApp}
+          accessible
+          accessibilityLabel={`Number ${i + 1}, ${app.name}, ${spokenMinutes(app.minutes)} this week`}>
+          <Text style={styles.topAppName}>
+            {i + 1}. {app.name}
+          </Text>
+          <Text style={styles.cardValue}>{formatMinutes(app.minutes)}</Text>
+        </View>
+      ))}
+
+      <View style={styles.insight}>
+        <MimoPet size={40} />
+        <Text
+          style={styles.insightText}
+          accessibilityLabel={`You use your phone most around ${PEAK_USAGE.spoken}, mostly ${top[0].name}.`}>
+          You use your phone most around {PEAK_USAGE.label}, mostly {top[0].name}.
+        </Text>
+      </View>
+
+      <Pressable
+        onPress={makeGoal}
+        accessibilityRole="button"
+        accessibilityHint={`Starts a new goal: ${goal.title}`}
+        style={({ pressed }) => [styles.cta, pressed && styles.pressed]}>
+        <Text style={styles.ctaText}>Make a goal for this</Text>
+      </Pressable>
     </View>
   );
 }
@@ -217,6 +300,9 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  pressed: {
+    opacity: 0.7,
+  },
   muted: {
     color: Palette.muted,
   },
@@ -338,6 +424,41 @@ const styles = StyleSheet.create({
     fontFamily: HandFonts.bold,
     fontSize: 15,
     color: Palette.ink,
+  },
+
+  usageRow: {
+    gap: 4,
+  },
+  usageLabel: {
+    fontFamily: HandFonts.bold,
+    fontSize: 16,
+    color: Palette.ink,
+  },
+  subTitle: {
+    fontFamily: HandFonts.bold,
+    fontSize: 18,
+    color: Palette.ink,
+  },
+  topApp: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  topAppName: {
+    fontFamily: HandFonts.regular,
+    fontSize: 17,
+    color: Palette.ink,
+  },
+  cta: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 24,
+    backgroundColor: Palette.ink,
+  },
+  ctaText: {
+    fontFamily: HandFonts.bold,
+    fontSize: 20,
+    color: Palette.white,
   },
 
   tiles: {

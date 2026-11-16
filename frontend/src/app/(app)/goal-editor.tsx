@@ -11,6 +11,7 @@ import {
   achievabilityTip,
   APP_LABELS,
   type AppGroup,
+  APPS_BY_GROUP,
   DAY_LETTERS,
   describeGoal,
   DURATION_OPTIONS,
@@ -50,19 +51,51 @@ const BLANK: GoalDraft = {
   why: '',
 };
 
+type PrefillParams = Partial<Record<'title' | 'kind' | 'apps' | 'appNames' | 'when' | 'minutes', string | string[]>>;
+
+const firstParam = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+const isKey = <T extends string>(labels: Record<T, string>, v: string | undefined): v is T =>
+  v != null && Object.prototype.hasOwnProperty.call(labels, v);
+
+/**
+ * A new goal can start pre-filled from route params, e.g. from the Progress tab's
+ * "Make a goal for this". Anything missing or invalid falls back to the blank goal.
+ */
+function draftFromParams(params: PrefillParams): GoalDraft {
+  const draft: GoalDraft = { ...BLANK };
+  const title = firstParam(params.title)?.trim();
+  if (title) draft.title = title.slice(0, 48);
+  const kind = firstParam(params.kind);
+  if (isKey(KIND_LABELS, kind)) draft.kind = kind;
+  const apps = firstParam(params.apps);
+  if (isKey(APP_LABELS, apps)) draft.apps = apps;
+  const names = (firstParam(params.appNames) ?? '').split(',').map((n) => n.trim());
+  const valid = APPS_BY_GROUP[draft.apps].filter((n) => names.includes(n));
+  if (valid.length) draft.appNames = [...new Set(names.filter((n) => valid.includes(n)))];
+  const when = firstParam(params.when);
+  if (isKey(WHEN_LABELS, when)) draft.when = when;
+  const minutes = Number(firstParam(params.minutes));
+  if (DURATION_OPTIONS.includes(minutes)) draft.minutes = minutes;
+  return draft;
+}
+
 /** Create or edit a goal. Every part of it is the user's choice. */
 export default function GoalEditorScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, ...prefill } = useLocalSearchParams<PrefillParams & { id?: string }>();
   const { goals, saveGoal, deleteGoal } = usePet();
   const existing = goals.find((g) => g.id === id);
 
   const [draft, setDraft] = useState<GoalDraft>(() => {
+    if (!id) return draftFromParams(prefill);
     if (!existing) return BLANK;
     const { streak: _streak, week: _week, ...rest } = existing;
     return rest;
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const set = (patch: Partial<GoalDraft>) => setDraft((d) => ({ ...d, ...patch }));
+  const pickedApps = draft.appNames ?? [];
+  const toggleApp = (name: string) =>
+    set({ appNames: pickedApps.includes(name) ? pickedApps.filter((n) => n !== name) : [...pickedApps, name] });
 
   const tip = achievabilityTip(draft);
   const canSave = draft.title.trim().length > 0 && draft.days.some(Boolean);
@@ -105,6 +138,7 @@ export default function GoalEditorScreen() {
           <TextInput
             value={draft.title}
             onChangeText={(title) => set({ title })}
+            accessibilityLabel="Name your goal"
             placeholder="e.g. No TikTok after 11pm"
             placeholderTextColor={Palette.muted}
             style={styles.input}
@@ -122,12 +156,24 @@ export default function GoalEditorScreen() {
 
         {draft.kind !== 'rest' && (
           <>
-            <Section title="Which apps?">
+            <Section title="Which apps?" hint={draft.apps !== 'all' ? 'optional, pick specific apps' : undefined}>
               <View style={styles.wrap}>
                 {(Object.keys(APP_LABELS) as AppGroup[]).map((apps) => (
-                  <ChoiceChip key={apps} label={APP_LABELS[apps]} selected={draft.apps === apps} onPress={() => set({ apps })} />
+                  <ChoiceChip
+                    key={apps}
+                    label={APP_LABELS[apps]}
+                    selected={draft.apps === apps}
+                    onPress={() => draft.apps !== apps && set({ apps, appNames: [] })}
+                  />
                 ))}
               </View>
+              {draft.apps !== 'all' && (
+                <View style={styles.wrap}>
+                  {APPS_BY_GROUP[draft.apps].map((name) => (
+                    <ChoiceChip key={name} label={name} selected={pickedApps.includes(name)} onPress={() => toggleApp(name)} />
+                  ))}
+                </View>
+              )}
             </Section>
             <Section title="When?">
               <View style={styles.wrap}>
@@ -184,7 +230,7 @@ export default function GoalEditorScreen() {
             <View style={styles.timeRow}>
               <Pressable
                 onPress={() => set({ time: ((draft.time ?? 0) - TIME_STEP + 24 * 60) % (24 * 60) })}
-                accessibilityLabel="Earlier"
+                accessibilityLabel={`${TIME_STEP} minutes earlier`}
                 hitSlop={8}
                 style={({ pressed }) => [styles.timeStep, pressed && styles.pressed]}>
                 <Text style={styles.timeStepText}>−</Text>
@@ -192,7 +238,7 @@ export default function GoalEditorScreen() {
               <Text style={styles.timeValue}>{formatTime(draft.time)}</Text>
               <Pressable
                 onPress={() => set({ time: ((draft.time ?? 0) + TIME_STEP) % (24 * 60) })}
-                accessibilityLabel="Later"
+                accessibilityLabel={`${TIME_STEP} minutes later`}
                 hitSlop={8}
                 style={({ pressed }) => [styles.timeStep, pressed && styles.pressed]}>
                 <Text style={styles.timeStepText}>+</Text>
@@ -215,6 +261,8 @@ export default function GoalEditorScreen() {
           <TextInput
             value={draft.personalReward}
             onChangeText={(personalReward) => set({ personalReward })}
+            accessibilityLabel="Your reward: treat yourself to"
+            accessibilityHint="Optional. Something you promise yourself for each day you keep it."
             placeholder="Treat yourself to… (optional), e.g. a chapter of my book"
             placeholderTextColor={Palette.muted}
             style={styles.input}
@@ -226,6 +274,8 @@ export default function GoalEditorScreen() {
           <TextInput
             value={draft.why}
             onChangeText={(why) => set({ why })}
+            accessibilityLabel="Why it matters to you"
+            accessibilityHint="Optional. Mimo will remind you."
             placeholder="e.g. I want to fall asleep without scrolling"
             placeholderTextColor={Palette.muted}
             style={[styles.input, styles.multiline]}
@@ -245,7 +295,7 @@ export default function GoalEditorScreen() {
           onPress={save}
           disabled={!canSave}
           style={({ pressed }) => [styles.save, !canSave && styles.saveDisabled, pressed && styles.pressed]}>
-          <Text style={styles.saveText}>{existing ? 'Save changes' : 'Set this goal'}</Text>
+          <Text style={[styles.saveText, !canSave && styles.saveTextDisabled]}>{existing ? 'Save changes' : 'Set this goal'}</Text>
         </Pressable>
 
         {existing && (
@@ -509,12 +559,15 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.ink,
   },
   saveDisabled: {
-    backgroundColor: Palette.muted,
+    backgroundColor: Palette.shade,
   },
   saveText: {
     fontFamily: HandFonts.bold,
     fontSize: 20,
     color: Palette.white,
+  },
+  saveTextDisabled: {
+    color: Palette.muted,
   },
   delete: {
     textAlign: 'center',

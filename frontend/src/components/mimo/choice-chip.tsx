@@ -15,8 +15,8 @@ export function ChoiceChip({ label, selected, onPress, round }: Props) {
   return (
     <Pressable
       onPress={onPress}
-      role={round ? 'checkbox' : 'radio'}
-      aria-checked={selected}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
       accessibilityLabel={label}
       hitSlop={4}
       style={({ pressed }) => [

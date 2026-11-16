@@ -81,7 +81,11 @@ function CheckIn({ goal }: { goal: Goal }) {
 
   if (goal.kind === 'rest') {
     return (
-      <Pressable onPress={() => router.push('/focus')} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+      <Pressable
+        onPress={() => router.push('/focus')}
+        accessibilityRole="button"
+        accessibilityLabel={`Start a ${goal.minutes} minute session`}
+        style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
         <Text style={styles.primaryText}>Start a {goal.minutes} min session →</Text>
       </Pressable>
     );
@@ -91,6 +95,8 @@ function CheckIn({ goal }: { goal: Goal }) {
     <View style={styles.actions}>
       <Pressable
         onPress={() => checkIn(goal.id, 'done')}
+        accessibilityRole="button"
+        accessibilityLabel="I did it"
         style={({ pressed }) => [styles.primary, styles.flex, pressed && styles.pressed]}>
         <Text style={styles.primaryText}>I did it ✓</Text>
       </Pressable>

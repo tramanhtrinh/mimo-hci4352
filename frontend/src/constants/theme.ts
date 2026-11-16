@@ -16,7 +16,7 @@ export const Palette = {
   paper: '#F5F3EE',
   white: '#FFFFFF',
   shade: '#E0DFDB',
-  muted: '#8A8986',
+  muted: '#696865',
 } as const;
 
 // Light and dark intentionally share the same palette so the look stays consistent.

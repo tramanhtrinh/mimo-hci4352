@@ -93,7 +93,14 @@ function EditProfile() {
     <Section title="Profile">
       <Field label="Name" value={name} onChangeText={setName} autoCapitalize="words" />
       <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-      <Field label="Companion's name" value={petName} onChangeText={setPetName} autoCapitalize="words" maxLength={16} />
+      <Field
+        label="Companion's name"
+        value={petName}
+        onChangeText={setPetName}
+        accessibilityHint="Optional. Leave it blank to use Mimo."
+        autoCapitalize="words"
+        maxLength={16}
+      />
       <FormNote text={note?.text ?? null} kind={note?.kind} />
       <FormButton label="Save profile" onPress={save} />
     </Section>
