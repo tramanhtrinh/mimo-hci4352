@@ -55,7 +55,7 @@ export function GoalCard({ goal, compact }: Props) {
 }
 
 function CheckIn({ goal }: { goal: Goal }) {
-  const { checkIn } = usePet();
+  const { checkIn, undoCheckIn } = usePet();
   const status = todayStatus(goal);
 
   if (status === 'done') {
@@ -64,6 +64,16 @@ function CheckIn({ goal }: { goal: Goal }) {
         <View style={styles.keptPill}>
           <Text style={styles.keptText}>Kept today ✓</Text>
         </View>
+        {/* Rest goals are checked in by a finished focus session, so there's nothing to take back by hand. */}
+        {goal.kind !== 'rest' && (
+          <Pressable
+            onPress={() => undoCheckIn(goal.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`Undo check-in for ${goal.title}`}
+            hitSlop={8}>
+            <Text style={styles.linkText}>Undo</Text>
+          </Pressable>
+        )}
       </View>
     );
   }
@@ -72,7 +82,7 @@ function CheckIn({ goal }: { goal: Goal }) {
     return (
       <View style={styles.actions}>
         <Text style={styles.skippedText}>Not today, and that&apos;s okay.</Text>
-        <Pressable onPress={() => checkIn(goal.id, 'done')} hitSlop={8}>
+        <Pressable onPress={() => checkIn(goal.id, 'done')} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.linkText}>I did it after all</Text>
         </Pressable>
       </View>
@@ -102,6 +112,7 @@ function CheckIn({ goal }: { goal: Goal }) {
       </Pressable>
       <Pressable
         onPress={() => checkIn(goal.id, 'skipped')}
+        accessibilityRole="button"
         style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
         <Text style={styles.secondaryText}>Not today</Text>
       </Pressable>
@@ -305,6 +316,8 @@ const styles = StyleSheet.create({
   },
   keptRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
   keptPill: {
     paddingHorizontal: 12,

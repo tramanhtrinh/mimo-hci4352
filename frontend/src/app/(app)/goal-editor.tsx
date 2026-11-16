@@ -85,22 +85,33 @@ export default function GoalEditorScreen() {
   const { goals, saveGoal, deleteGoal } = usePet();
   const existing = goals.find((g) => g.id === id);
 
-  const [draft, setDraft] = useState<GoalDraft>(() => {
+  const [initial] = useState<GoalDraft>(() => {
     if (!id) return draftFromParams(prefill);
     if (!existing) return BLANK;
     const { streak: _streak, week: _week, ...rest } = existing;
     return rest;
   });
+  const [draft, setDraftState] = useState<GoalDraft>(initial);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  /** Any change hides the "discard changes?" prompt, since the user is clearly still editing. */
+  const setDraft = (next: GoalDraft | ((d: GoalDraft) => GoalDraft)) => {
+    setConfirmDiscard(false);
+    setDraftState(next);
+  };
   const set = (patch: Partial<GoalDraft>) => setDraft((d) => ({ ...d, ...patch }));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const pickedApps = draft.appNames ?? [];
   const toggleApp = (name: string) =>
     set({ appNames: pickedApps.includes(name) ? pickedApps.filter((n) => n !== name) : [...pickedApps, name] });
 
   const tip = achievabilityTip(draft);
-  const canSave = draft.title.trim().length > 0 && draft.days.some(Boolean);
+  const hasName = draft.title.trim().length > 0;
+  const canSave = hasName && draft.days.some(Boolean);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/goals'));
+  /** Leaving with unsaved changes asks first, so a stray tap doesn't throw away a half-built goal. */
+  const cancel = () => (dirty ? setConfirmDiscard(true) : close());
   const save = () => {
     saveGoal({ ...draft, title: draft.title.trim(), personalReward: draft.personalReward.trim(), why: draft.why.trim() });
     close();
@@ -109,12 +120,32 @@ export default function GoalEditorScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.topBar}>
-        <Pressable onPress={close} hitSlop={12}>
+        <Pressable onPress={cancel} accessibilityRole="button" hitSlop={12}>
           <Text style={styles.cancel}>Cancel</Text>
         </Pressable>
         <Text style={styles.heading}>{existing ? 'Edit goal' : 'New goal'}</Text>
         <View style={styles.topSpacer} />
       </View>
+
+      {confirmDiscard && (
+        <View style={styles.discard} accessibilityRole="alert">
+          <Text style={styles.discardText}>Discard your changes to this goal?</Text>
+          <View style={styles.discardActions}>
+            <Pressable
+              onPress={() => setConfirmDiscard(false)}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.discardKeep, pressed && styles.pressed]}>
+              <Text style={styles.discardKeepText}>Keep editing</Text>
+            </Pressable>
+            <Pressable
+              onPress={close}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.discardLeave, pressed && styles.pressed]}>
+              <Text style={styles.discardLeaveText}>Discard</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Preview draft={draft} />
@@ -178,7 +209,13 @@ export default function GoalEditorScreen() {
             <Section title="When?">
               <View style={styles.wrap}>
                 {(Object.keys(WHEN_LABELS) as TimeOfDay[]).map((when) => (
-                  <ChoiceChip key={when} label={WHEN_LABELS[when]} selected={draft.when === when} onPress={() => set({ when })} />
+                  <ChoiceChip
+                    key={when}
+                    label={WHEN_LABELS[when]}
+                    selected={draft.when === when}
+                    // A picked clock time follows the new time of day, so "Before bed" never shows 7:30 AM.
+                    onPress={() => set(draft.time != null ? { when, time: SUGGESTED_TIME[when] } : { when })}
+                  />
                 ))}
               </View>
             </Section>
@@ -291,9 +328,13 @@ export default function GoalEditorScreen() {
           </View>
         )}
 
+        {!hasName && <Text style={styles.saveHint}>Give your goal a name (at the top) to save it.</Text>}
+
         <Pressable
           onPress={save}
           disabled={!canSave}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canSave }}
           style={({ pressed }) => [styles.save, !canSave && styles.saveDisabled, pressed && styles.pressed]}>
           <Text style={[styles.saveText, !canSave && styles.saveTextDisabled]}>{existing ? 'Save changes' : 'Set this goal'}</Text>
         </Pressable>
@@ -568,6 +609,60 @@ const styles = StyleSheet.create({
   },
   saveTextDisabled: {
     color: Palette.muted,
+  },
+  saveHint: {
+    marginBottom: -12,
+    textAlign: 'center',
+    fontFamily: HandFonts.bold,
+    fontSize: 16,
+    color: Palette.ink,
+  },
+  discard: {
+    gap: 10,
+    marginHorizontal: 20,
+    marginBottom: 6,
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Palette.white,
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
+  },
+  discardText: {
+    fontFamily: HandFonts.bold,
+    fontSize: 18,
+    color: Palette.ink,
+  },
+  discardActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  discardKeep: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: Palette.ink,
+  },
+  discardKeepText: {
+    fontFamily: HandFonts.bold,
+    fontSize: 17,
+    color: Palette.white,
+  },
+  discardLeave: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+  },
+  discardLeaveText: {
+    fontFamily: HandFonts.bold,
+    fontSize: 17,
+    color: Palette.ink,
   },
   delete: {
     textAlign: 'center',

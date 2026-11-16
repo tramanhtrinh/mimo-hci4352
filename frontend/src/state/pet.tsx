@@ -185,6 +185,7 @@ function fromSaved(saved: Partial<SavedState>, fresh: State): State {
 type Action =
   | { type: 'ritual'; id: RitualId }
   | { type: 'checkIn'; id: string; status: 'done' | 'skipped' }
+  | { type: 'undoCheckIn'; id: string }
   | { type: 'saveGoal'; draft: GoalDraft }
   | { type: 'deleteGoal'; id: string }
   | { type: 'setFocusing'; focusing: boolean }
@@ -274,6 +275,26 @@ function reducer(state: State, action: Action): State {
         message: `Goal kept! +${goal.reward} sparks for Mimo.${treat}`,
         interaction: state.interaction + 1,
         goals: state.goals.map((g) => (g.id === goal.id ? { ...g, week, streak: g.streak + 1 } : g)),
+      };
+    }
+    case 'undoCheckIn': {
+      // Takes back a mistaken "I did it": the sparks, the streak day and Mimo's mood boost.
+      const goal = state.goals.find((g) => g.id === action.id);
+      if (!goal || todayStatus(goal) !== 'done') return state;
+      const today = todayIndex();
+      const { stats, deltas } = applyEffect(state.stats, { mood: -GOAL_MOOD_BOOST });
+      return {
+        ...state,
+        sparks: Math.max(0, state.sparks - goal.reward),
+        stats,
+        deltas,
+        message: 'Check-in undone. You can check in again any time today.',
+        interaction: state.interaction + 1,
+        goals: state.goals.map((g) =>
+          g.id === goal.id
+            ? { ...g, streak: Math.max(0, g.streak - 1), week: g.week.map((d, i) => (i === today ? null : d)) }
+            : g,
+        ),
       };
     }
     case 'saveGoal': {
@@ -384,6 +405,7 @@ type PetContextValue = State & {
   nextLevel: (typeof LEVELS)[number] | undefined;
   doRitual: (id: RitualId) => void;
   checkIn: (id: string, status: 'done' | 'skipped') => void;
+  undoCheckIn: (id: string) => void;
   saveGoal: (draft: GoalDraft) => void;
   deleteGoal: (id: string) => void;
   setFocusing: (focusing: boolean) => void;
@@ -436,6 +458,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
     (id: string, status: 'done' | 'skipped') => dispatch({ type: 'checkIn', id, status }),
     [],
   );
+  const undoCheckIn = useCallback((id: string) => dispatch({ type: 'undoCheckIn', id }), []);
   const saveGoal = useCallback((draft: GoalDraft) => dispatch({ type: 'saveGoal', draft }), []);
   const deleteGoal = useCallback((id: string) => dispatch({ type: 'deleteGoal', id }), []);
   const setFocusing = useCallback((focusing: boolean) => dispatch({ type: 'setFocusing', focusing }), []);
@@ -475,6 +498,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
       nextLevel: next,
       doRitual,
       checkIn,
+      undoCheckIn,
       saveGoal,
       deleteGoal,
       setFocusing,
@@ -486,6 +510,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
     petName,
     doRitual,
     checkIn,
+    undoCheckIn,
     saveGoal,
     deleteGoal,
     setFocusing,
