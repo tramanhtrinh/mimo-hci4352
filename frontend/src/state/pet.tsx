@@ -198,6 +198,7 @@ type Action =
   | { type: 'deleteGoal'; id: string }
   | { type: 'setFocusing'; focusing: boolean }
   | { type: 'finishFocus'; minutes: number; peeks: number; early: boolean }
+  | { type: 'playMiniGame'; score: number }
   | { type: 'decay' }
   | { type: 'clearFeedback' }
   | { type: 'load'; state: State }
@@ -322,6 +323,38 @@ function reducer(state: State, action: Action): State {
       return { ...state, goals: state.goals.filter((g) => g.id !== action.id) };
     case 'setFocusing':
       return { ...state, focusing: action.focusing };
+    case 'playMiniGame': {
+      const cost = 10;
+      if (state.sparks < cost) {
+        return {
+          ...state,
+          message: `You need ${cost - state.sparks} more sparks. Try a phone-free session and earn some!`,
+        };
+      }
+
+      const moodGain = Math.min(25, 5 + action.score * 3);
+      const energyLoss = Math.min(12, 2 + action.score);
+      const hungerLoss = Math.min(10, action.score);
+      const { stats, deltas } = applyEffect(state.stats, {
+        mood: moodGain,
+        energy: -energyLoss,
+        hunger: -hungerLoss,
+      });
+
+      return {
+        ...state,
+        sparks: state.sparks - cost,
+        stats,
+        deltas,
+        message:
+          action.score >= 8
+            ? 'Mimo loved that yarn toss! The best kind of teamwork.'
+            : action.score >= 4
+              ? 'That was a great round. Mimo is beaming!'
+              : 'A few gentle tosses and a happy bear is a win.',
+        interaction: state.interaction + 1,
+      };
+    }
     case 'finishFocus': {
       const { minutes, peeks, early } = action;
       const reward = focusReward(minutes, peeks, early);
@@ -419,6 +452,7 @@ type PetContextValue = State & {
   deleteGoal: (id: string) => void;
   setFocusing: (focusing: boolean) => void;
   finishFocus: (minutes: number, peeks: number, early: boolean) => void;
+  playMiniGame: (score: number) => void;
   buyItem: (id: AccessoryId) => void;
   equipItem: (id: AccessoryId | null) => void;
   claimGift: () => void;
@@ -475,6 +509,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
     (minutes: number, peeks: number, early: boolean) => dispatch({ type: 'finishFocus', minutes, peeks, early }),
     [],
   );
+  const playMiniGame = useCallback((score: number) => dispatch({ type: 'playMiniGame', score }), []);
   const clearFeedback = useCallback(() => dispatch({ type: 'clearFeedback' }), []);
   const buyItem = useCallback((id: AccessoryId) => dispatch({ type: 'buy', id }), []);
   const equipItem = useCallback((id: AccessoryId | null) => dispatch({ type: 'equip', id }), []);
@@ -512,6 +547,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
       deleteGoal,
       setFocusing,
       finishFocus,
+      playMiniGame,
       clearFeedback,
     };
   }, [
@@ -524,6 +560,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
     deleteGoal,
     setFocusing,
     finishFocus,
+    playMiniGame,
     buyItem,
     equipItem,
     claimGift,
