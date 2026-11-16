@@ -3,9 +3,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { MimoPet } from '@/components/mimo/mimo-pet';
 import { SparksPill } from '@/components/mimo/sparks-pill';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { APP_LABELS, DAY_LETTERS, todayIndex } from '@/state/goals';
 import { LEVELS, levelFor, usePet } from '@/state/pet';
 import {
@@ -59,7 +60,7 @@ function WeekChart() {
   return (
     <View style={styles.card}>
       <View style={styles.row}>
-        <Text style={styles.cardTitle}>This week</Text>
+        <HighlightTitle textStyle={styles.cardTitle}>This week</HighlightTitle>
         <Text style={styles.cardValue}>{formatMinutes(total)} phone-free</Text>
       </View>
 
@@ -228,7 +229,7 @@ function GrowthPath() {
           );
         })}
       </View>
-      <HatchedProgress value={progress} duration={900} />
+      <HatchedProgress value={progress} duration={900} color={Pastel.butter} />
       <Text style={styles.hint}>
         {nextLevel
           ? `${nextLevel.xp - xp} growth to ${nextLevel.stage}. Each phone-free minute adds 2.`
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.ink,
   },
   barToday: {
-    backgroundColor: Palette.shade,
+    backgroundColor: Pastel.butter,
     borderWidth: 2,
     borderColor: Palette.ink,
   },
@@ -527,7 +528,7 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.ink,
   },
   stageDotNow: {
-    boxShadow: `0px 0px 0px 4px ${Palette.shade}`,
+    boxShadow: `0px 0px 0px 4px ${Pastel.butter}`,
   },
   stageNum: {
     fontFamily: HandFonts.bold,
@@ -565,7 +566,7 @@ const styles = StyleSheet.create({
   badgeDone: {
     borderStyle: 'solid',
     borderColor: Palette.ink,
-    backgroundColor: Palette.ink,
+    backgroundColor: Pastel.butter,
   },
   badgeMark: {
     fontFamily: HandFonts.bold,
@@ -573,7 +574,7 @@ const styles = StyleSheet.create({
     color: Palette.ink,
   },
   badgeMarkDone: {
-    color: Palette.white,
+    color: Palette.ink,
   },
   milestoneTitle: {
     fontFamily: HandFonts.bold,

@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GroundWaves, Sparkle, Squiggle } from '@/components/mimo/decorations';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
 import { MimoBear } from '@/components/mimo/mimo-bear';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { useAuth } from '@/state/auth';
 
 /** Opening / loading screen. Moves on to Home, or to login if nobody is signed in, once the bar fills. */
@@ -42,7 +42,7 @@ export default function OpeningScreen() {
 
         <View style={[styles.loading, { width: bearSize * 0.82 }]}>
           <Text style={styles.loadingLabel}>loading . . .</Text>
-          <HatchedProgress onComplete={onLoaded} />
+          <HatchedProgress onComplete={onLoaded} color={Pastel.butter} />
         </View>
       </SafeAreaView>
 

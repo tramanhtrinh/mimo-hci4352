@@ -5,8 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Sparkle } from '@/components/mimo/decorations';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { MimoPet } from '@/components/mimo/mimo-pet';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { focusReward, levelFor, restGoalsKeptBy, SPARKS_PER_MINUTE, usePet } from '@/state/pet';
 
 const DURATIONS = [5, 15, 30];
@@ -86,7 +87,9 @@ function Setup({
       </Pressable>
 
       <MimoPet size={150} mood="sleepy" />
-      <Text style={styles.title}>Phone-free time</Text>
+      <HighlightTitle textStyle={styles.title} style={styles.centered}>
+        Phone-free time
+      </HighlightTitle>
       <Text style={styles.body}>
         Put your phone face-down and {name} will nap beside you. You&apos;ll earn {SPARKS_PER_MINUTE} sparks for
         every minute away.
@@ -108,7 +111,7 @@ function Setup({
       <View style={styles.rewardCard}>
         <Text style={styles.rewardHeading}>{name} will get</Text>
         <View style={styles.rewardRow}>
-          <RewardChip label={`+${reward.sparks} sparks`} />
+          <RewardChip label={`+${reward.sparks} sparks`} sparks />
           <RewardChip label={`+${reward.effect.energy} energy`} />
           <RewardChip label={`+${reward.xp} growth`} />
         </View>
@@ -287,7 +290,9 @@ function Done({ summary }: { summary: Summary }) {
         <Sparkle size={12} />
       </View>
       <MimoPet size={150} mood={summary.early ? 'calm' : 'joyful'} />
-      <Text style={styles.title}>{summary.early ? 'Welcome back' : 'You did it!'}</Text>
+      <HighlightTitle textStyle={styles.title} style={styles.centered}>
+        {summary.early ? 'Welcome back' : 'You did it!'}
+      </HighlightTitle>
       <Text style={styles.body}>
         {summary.minutes} phone-free {summary.minutes === 1 ? 'minute' : 'minutes'}.{' '}
         {summary.early ? `${name} is glad for every one of them.` : `${name} feels so rested and loved.`}
@@ -305,7 +310,7 @@ function Done({ summary }: { summary: Summary }) {
       <View style={styles.rewardCard}>
         <Text style={styles.rewardHeading}>What your time gave {name}</Text>
         <View style={styles.rewardRow}>
-          <RewardChip label={`+${summary.sparks} sparks`} />
+          <RewardChip label={`+${summary.sparks} sparks`} sparks />
           <RewardChip label={`${summary.energy >= 0 ? '+' : ''}${summary.energy} energy`} />
           <RewardChip label={`${summary.mood >= 0 ? '+' : ''}${summary.mood} mood`} />
           <RewardChip label={`+${summary.xp} growth`} />
@@ -327,7 +332,7 @@ function Done({ summary }: { summary: Summary }) {
               {nextLevel ? `${nextLevel.xp - xp} growth to ${nextLevel.stage}` : 'fully grown'}
             </Text>
           </View>
-          <HatchedProgress value={progress} duration={900} />
+          <HatchedProgress value={progress} duration={900} color={Pastel.butter} />
         </View>
       </View>
 
@@ -343,9 +348,9 @@ function Done({ summary }: { summary: Summary }) {
   );
 }
 
-function RewardChip({ label }: { label: string }) {
+function RewardChip({ label, sparks }: { label: string; sparks?: boolean }) {
   return (
-    <View style={styles.rewardChip}>
+    <View style={[styles.rewardChip, sparks && styles.rewardChipSparks]}>
       <Text style={styles.rewardChipText}>{label}</Text>
     </View>
   );
@@ -445,6 +450,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Palette.ink,
     backgroundColor: Palette.paper,
+  },
+  rewardChipSparks: {
+    backgroundColor: Pastel.butter,
+  },
+  centered: {
+    alignSelf: 'center',
   },
   rewardChipText: {
     fontFamily: HandFonts.bold,

@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Field, FormButton, FormNote } from '@/components/mimo/form';
 import { MimoPet } from '@/components/mimo/mimo-pet';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { useAuth } from '@/state/auth';
 import { usePet } from '@/state/pet';
 
@@ -62,16 +62,16 @@ function ProfileCard() {
       <View style={styles.stats}>
         <Stat value={`Lv ${level}`} label={`${petName} the ${stage}`} />
         <Stat value={`${streakDays}`} label="day streak" />
-        <Stat value={`${sparks}`} label="sparks" />
+        <Stat value={`${sparks}`} label="sparks" highlight />
       </View>
     </View>
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
+      <Text style={[styles.statValue, highlight && styles.statValueSparks]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -264,6 +264,12 @@ const styles = StyleSheet.create({
     fontFamily: HandFonts.bold,
     fontSize: 22,
     color: Palette.ink,
+  },
+  statValueSparks: {
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: Pastel.butter,
   },
   statLabel: {
     fontFamily: HandFonts.regular,

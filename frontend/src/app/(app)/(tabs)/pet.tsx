@@ -15,9 +15,10 @@ import {
 } from '@/components/mimo/care-icons';
 import { Sparkle } from '@/components/mimo/decorations';
 import { HatchedProgress } from '@/components/mimo/hatched-progress';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { MimoPet } from '@/components/mimo/mimo-pet';
 import { SparksPill } from '@/components/mimo/sparks-pill';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import {
   currentNeed,
   describeStat,
@@ -26,6 +27,7 @@ import {
   type Ritual,
   type RitualId,
   RITUALS,
+  SNACKS,
   type StatKey,
   usePet,
 } from '@/state/pet';
@@ -43,13 +45,6 @@ const RITUAL_ICONS: Record<RitualId, IconComponent> = {
   feed: AppleIcon,
   play: BallIcon,
 };
-
-/** Snacks Mimo can be offered. Every snack currently runs the normal "feed" ritual. */
-const SNACKS = [
-  { id: 'apple', name: 'Apple', emoji: '🍎' },
-  { id: 'cookie', name: 'Cookie', emoji: '🍪' },
-  { id: 'rice-ball', name: 'Rice ball', emoji: '🍙' },
-];
 
 export default function PetScreen() {
   const { name, level, stage, xp, nextLevel } = usePet();
@@ -69,7 +64,7 @@ export default function PetScreen() {
             <SparksPill />
           </View>
           <View style={styles.growth}>
-            <HatchedProgress value={growth} duration={900} />
+            <HatchedProgress value={growth} duration={900} color={Pastel.butter} />
             <Text style={styles.growthText}>
               {nextLevel ? `${nextLevel.xp - xp} growth to ${nextLevel.stage} · earned with phone-free time` : 'fully grown'}
             </Text>
@@ -184,7 +179,7 @@ function VitalHarmony() {
               )}
               <Text style={styles.vitalValue}>{stats[key]}%</Text>
             </View>
-            <HatchedProgress value={stats[key] / 100} duration={700} />
+            <HatchedProgress value={stats[key] / 100} duration={700} color={Pastel.blush} />
           </View>
         );
       })}
@@ -197,7 +192,7 @@ function CareRituals() {
 
   return (
     <View style={styles.rituals}>
-      <Text style={styles.sectionTitle}>Care Rituals</Text>
+      <HighlightTitle textStyle={styles.sectionTitle}>Care Rituals</HighlightTitle>
       <Text style={styles.sectionHint}>Phone-free time earns sparks. Spend them on Mimo.</Text>
       {RITUALS.map((ritual) => (
         <View key={ritual.id} style={styles.ritualGroup}>
@@ -223,7 +218,7 @@ function SnackPicker({ cost, onClose }: { cost: number; onClose: () => void }) {
             key={snack.id}
             disabled={!affordable}
             onPress={() => {
-              doRitual('feed');
+              doRitual('feed', snack.id);
               onClose();
             }}
             accessibilityLabel={`Feed ${snack.name}`}
@@ -562,11 +557,19 @@ const styles = StyleSheet.create({
     color: Palette.muted,
   },
   ritualCost: {
+    alignSelf: 'flex-start',
+    marginTop: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: Pastel.butter,
     fontFamily: HandFonts.bold,
     fontSize: 13,
     color: Palette.ink,
   },
   ritualCostShort: {
+    paddingHorizontal: 0,
+    backgroundColor: 'transparent',
     color: Palette.muted,
   },
   ritualGroup: {

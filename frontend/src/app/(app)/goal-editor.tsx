@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChoiceChip } from '@/components/mimo/choice-chip';
 import { Sparkle } from '@/components/mimo/decorations';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import {
   achievabilityTip,
   APP_LABELS,
@@ -377,7 +377,7 @@ function Preview({ draft }: { draft: GoalDraft }) {
             <Text style={styles.previewChipText}>{formatTime(draft.time)}</Text>
           </View>
         )}
-        <View style={styles.previewChip}>
+        <View style={[styles.previewChip, styles.previewChipSparks]}>
           <Sparkle size={10} />
           <Text style={styles.previewChipText}>+{draft.reward} sparks</Text>
         </View>
@@ -496,6 +496,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Palette.ink,
     backgroundColor: Palette.paper,
+  },
+  previewChipSparks: {
+    backgroundColor: Pastel.butter,
   },
   previewChipText: {
     fontFamily: HandFonts.bold,

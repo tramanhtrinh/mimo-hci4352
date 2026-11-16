@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authStyles as styles } from '@/components/mimo/auth-styles';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { Sparkle } from '@/components/mimo/decorations';
 import { Field, FormButton, FormNote } from '@/components/mimo/form';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
@@ -51,7 +52,9 @@ export default function LoginScreen() {
               <Sparkle size={18} />
             </View>
             <MimoCharacter size={110} mood="joyful" />
-            <Text style={styles.title}>Welcome back</Text>
+            <HighlightTitle textStyle={styles.title} style={{ alignSelf: 'center' }}>
+              Welcome back
+            </HighlightTitle>
             <Text style={styles.subtitle}>Mimo missed you. Log in to keep your streak going.</Text>
           </View>
 

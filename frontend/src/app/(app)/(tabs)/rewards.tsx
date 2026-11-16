@@ -3,10 +3,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Sparkle } from '@/components/mimo/decorations';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { MimoPet } from '@/components/mimo/mimo-pet';
 import { SparksPill } from '@/components/mimo/sparks-pill';
-import { HandFonts, Palette } from '@/constants/theme';
+import { HandFonts, Palette, Pastel } from '@/constants/theme';
 import { SPARKS_PER_MINUTE, usePet } from '@/state/pet';
 import { DAILY_GIFT, SHOP, type ShopItem } from '@/state/shop';
 
@@ -26,7 +27,7 @@ export default function RewardsScreen() {
         <DressingRoom />
         {message && <Text style={styles.message}>{message}</Text>}
 
-        <Text style={styles.sectionTitle}>Shop</Text>
+        <HighlightTitle textStyle={styles.sectionTitle}>Shop</HighlightTitle>
         <View style={styles.grid}>
           {SHOP.map((item) => (
             <ShopCard key={item.id} item={item} />
@@ -45,8 +46,8 @@ function DailyGift() {
 
   return (
     <View style={[styles.card, styles.giftCard]}>
-      <View style={styles.giftIcon}>
-        <Sparkle size={22} color={giftAvailable ? Palette.white : Palette.muted} />
+      <View style={[styles.giftIcon, !giftAvailable && styles.giftIconOff]}>
+        <Sparkle size={22} color={giftAvailable ? Palette.ink : Palette.muted} />
       </View>
       <View style={styles.flex}>
         <Text style={styles.cardTitle}>Daily hello</Text>
@@ -245,9 +246,15 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: Palette.ink,
+    borderWidth: 2,
+    borderColor: Palette.ink,
+    backgroundColor: Pastel.butter,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  giftIconOff: {
+    borderColor: Palette.shade,
+    backgroundColor: Palette.paper,
   },
   smallButton: {
     paddingHorizontal: 16,

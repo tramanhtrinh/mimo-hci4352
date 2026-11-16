@@ -1,4 +1,4 @@
-import { type StyleProp, StyleSheet, Text, type TextStyle, View } from 'react-native';
+import { type StyleProp, StyleSheet, Text, type TextStyle, View, type ViewStyle } from 'react-native';
 
 import { HandFonts, Palette, Pastel } from '@/constants/theme';
 
@@ -12,12 +12,14 @@ type Props = {
   textStyle?: StyleProp<TextStyle>;
   /** Announce as a heading to screen readers. On by default, since most uses are section titles. */
   header?: boolean;
+  /** Wrapper style, e.g. { alignSelf: 'center' } on centered screens. */
+  style?: StyleProp<ViewStyle>;
 };
 
 /** Text with a pastel highlighter stroke behind it: the app's main way of drawing the eye. */
-export function HighlightTitle({ children, color = Pastel.butter, on = true, textStyle, header = true }: Props) {
+export function HighlightTitle({ children, color = Pastel.butter, on = true, textStyle, header = true, style }: Props) {
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, style]}>
       {on && <View style={[styles.marker, { backgroundColor: color }]} />}
       <Text style={[styles.title, textStyle]} accessibilityRole={header ? 'header' : undefined}>
         {children}

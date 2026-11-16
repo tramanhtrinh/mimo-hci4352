@@ -52,11 +52,11 @@ export const RITUALS: Ritual[] = [
   {
     id: 'feed',
     title: 'Feed Snack',
-    description: 'Mindful berries, bought with sparks',
+    description: 'Pick a treat, bought with sparks',
     badge: '+20 Fullness',
     cost: 15,
     effect: { hunger: 20, mood: 5 },
-    reaction: 'Mimo munched the berries happily!',
+    reaction: 'Mimo munched its snack happily!',
   },
   {
     id: 'play',
@@ -68,6 +68,14 @@ export const RITUALS: Ritual[] = [
     reaction: 'Mimo had so much fun playing with you!',
   },
 ];
+
+/** Snacks offered in the feed ritual. They all fill Mimo up the same; each gets its own reaction. */
+export const SNACKS = [
+  { id: 'apple', name: 'Apple', emoji: '🍎', reaction: 'Crunch! Mimo loved the apple.' },
+  { id: 'cookie', name: 'Cookie', emoji: '🍪', reaction: 'Mimo nibbled the cookie. Crumbs everywhere!' },
+  { id: 'rice-ball', name: 'Rice ball', emoji: '🍙', reaction: 'Mimo gobbled up the rice ball happily!' },
+] as const;
+export type SnackId = (typeof SNACKS)[number]['id'];
 
 export const LEVELS = [
   { level: 1, stage: 'Seed', xp: 0 },
@@ -183,7 +191,7 @@ function fromSaved(saved: Partial<SavedState>, fresh: State): State {
 }
 
 type Action =
-  | { type: 'ritual'; id: RitualId }
+  | { type: 'ritual'; id: RitualId; snack?: SnackId }
   | { type: 'checkIn'; id: string; status: 'done' | 'skipped' }
   | { type: 'undoCheckIn'; id: string }
   | { type: 'saveGoal'; draft: GoalDraft }
@@ -240,12 +248,13 @@ function reducer(state: State, action: Action): State {
         };
       }
       const { stats, deltas } = applyEffect(state.stats, ritual.effect);
+      const snack = SNACKS.find((s) => s.id === action.snack);
       return {
         ...state,
         sparks: state.sparks - ritual.cost,
         stats,
         deltas,
-        message: ritual.reaction,
+        message: snack?.reaction ?? ritual.reaction,
         interaction: state.interaction + 1,
       };
     }
@@ -403,7 +412,7 @@ type PetContextValue = State & {
   level: number;
   stage: string;
   nextLevel: (typeof LEVELS)[number] | undefined;
-  doRitual: (id: RitualId) => void;
+  doRitual: (id: RitualId, snack?: SnackId) => void;
   checkIn: (id: string, status: 'done' | 'skipped') => void;
   undoCheckIn: (id: string) => void;
   saveGoal: (draft: GoalDraft) => void;
@@ -453,7 +462,7 @@ export function PetProvider({ userId, petName, children }: PetProviderProps) {
     AsyncStorage.setItem(petStorageKey(userId), JSON.stringify(toSaved(state))).catch(() => {});
   }, [loaded, state, userId]);
 
-  const doRitual = useCallback((id: RitualId) => dispatch({ type: 'ritual', id }), []);
+  const doRitual = useCallback((id: RitualId, snack?: SnackId) => dispatch({ type: 'ritual', id, snack }), []);
   const checkIn = useCallback(
     (id: string, status: 'done' | 'skipped') => dispatch({ type: 'checkIn', id, status }),
     [],
@@ -575,7 +584,7 @@ export function currentNeed(stats: Stats): Need {
       return { says: "I'm so sleepy… will you put your phone down and rest with me?", action: 'rest', cta: 'Rest together' };
     }
     if (lowest === 'hunger') {
-      return { says: 'My tummy is rumbling… could we earn sparks for a berry snack?', action: 'feed', cta: 'Feed Mimo' };
+      return { says: 'My tummy is rumbling… could we earn sparks for a snack?', action: 'feed', cta: 'Feed Mimo' };
     }
     return { says: 'I missed you! Can we play for a bit?', action: 'play', cta: 'Play together' };
   }

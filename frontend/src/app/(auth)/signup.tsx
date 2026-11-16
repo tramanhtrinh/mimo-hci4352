@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authStyles as styles } from '@/components/mimo/auth-styles';
+import { HighlightTitle } from '@/components/mimo/highlight-title';
 import { Field, FormButton, FormNote } from '@/components/mimo/form';
 import { MimoCharacter } from '@/components/mimo/mimo-bear';
 import { useAuth } from '@/state/auth';
@@ -32,7 +33,9 @@ export default function SignupScreen() {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
             <MimoCharacter size={100} mood="calm" />
-            <Text style={styles.title}>Create an account</Text>
+            <HighlightTitle textStyle={styles.title} style={{ alignSelf: 'center' }}>
+              Create an account
+            </HighlightTitle>
             <Text style={styles.subtitle}>Adopt a companion that grows when you put your phone down.</Text>
           </View>
 
