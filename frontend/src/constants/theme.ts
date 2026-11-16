@@ -23,6 +23,20 @@ export const Palette = {
  * Two soft accents point the eye at what matters. They are only ever used as
  * backgrounds behind ink text (never as text colors), so contrast stays high.
  */
+/**
+ * Fill colors for small drawings only (care icons and Mimo's accessories), always inside
+ * an ink outline. Interface surfaces stick to `Pastel`, so the screens stay calm.
+ */
+export const Tint = {
+  rose: '#F6B3C2',
+  apple: '#F59C9C',
+  coral: '#F8B195',
+  sun: '#FFDF6E',
+  leaf: '#AEDB9F',
+  sky: '#AFD3F2',
+  lilac: '#CDBDF2',
+} as const;
+
 export const Pastel = {
   /** Primary, the sparks color: highlighted titles, today's target, and anything earned or kept. */
   butter: '#FFEFA8',

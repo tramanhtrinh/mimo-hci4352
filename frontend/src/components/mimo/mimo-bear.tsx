@@ -1,6 +1,6 @@
 import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 
-import { Palette } from '@/constants/theme';
+import { Palette, Tint } from '@/constants/theme';
 import type { AccessoryId } from '@/state/shop';
 
 export type BearMood = 'joyful' | 'calm' | 'sad' | 'sleepy';
@@ -92,24 +92,25 @@ function Accessory({ id }: { id: AccessoryId }) {
     case 'bow':
       return (
         <G>
-          <Path d="M200 74 L176 60 L180 88 Z" fill={Palette.white} {...ink} />
-          <Path d="M200 74 L224 60 L220 88 Z" fill={Palette.white} {...ink} />
-          <Circle cx={200} cy={74} r={6} fill={Palette.ink} />
+          <Path d="M200 74 L176 60 L180 88 Z" fill={Tint.rose} {...ink} />
+          <Path d="M200 74 L224 60 L220 88 Z" fill={Tint.rose} {...ink} />
+          <Circle cx={200} cy={74} r={6.5} fill={Tint.apple} {...ink} strokeWidth={2.5} />
         </G>
       );
     case 'scarf':
       return (
         <G>
-          <Path d="M100 168 C130 182 190 182 220 168 L222 186 C190 200 130 200 98 186 Z" fill={Palette.shade} {...ink} />
-          <Path d="M182 188 L192 226 L174 228 L168 192 Z" fill={Palette.shade} {...ink} />
+          <Path d="M100 168 C130 182 190 182 220 168 L222 186 C190 200 130 200 98 186 Z" fill={Tint.coral} {...ink} />
+          <Path d="M182 188 L192 226 L174 228 L168 192 Z" fill={Tint.coral} {...ink} />
+          <Path d="M184 200 L176 201 M187 212 L178 213" stroke={Tint.sun} strokeWidth={4} strokeLinecap="round" />
           <Path d="M120 178 L118 192 M140 182 L139 196 M160 183 L160 197 M200 180 L202 194" {...ink} strokeWidth={2} />
         </G>
       );
     case 'glasses':
       return (
         <G>
-          <Circle cx={142} cy={136} r={17} fill="none" {...ink} />
-          <Circle cx={180} cy={136} r={17} fill="none" {...ink} />
+          <Circle cx={142} cy={136} r={17} fill={Tint.sky} fillOpacity={0.4} {...ink} />
+          <Circle cx={180} cy={136} r={17} fill={Tint.sky} fillOpacity={0.4} {...ink} />
           <Path d="M159 134 Q161 130 163 134" fill="none" {...ink} />
           <Path d="M125 132 L104 126 M197 132 L218 126" {...ink} />
         </G>
@@ -117,9 +118,11 @@ function Accessory({ id }: { id: AccessoryId }) {
     case 'flower':
       return (
         <G>
-          <Path d="M112 88 C135 72 185 72 208 88" fill="none" {...ink} strokeWidth={3} />
+          <Path d="M112 88 C135 72 185 72 208 88" fill="none" {...ink} stroke={Tint.leaf} strokeWidth={6} />
+          <Path d="M112 88 C135 72 185 72 208 88" fill="none" {...ink} strokeWidth={2} />
           {[118, 140, 160, 180, 202].map((x, i) => {
             const y = i === 0 || i === 4 ? 86 : i === 2 ? 74 : 78;
+            const petal = [Tint.rose, Tint.lilac, Tint.rose, Tint.lilac, Tint.rose][i];
             return (
               <G key={x}>
                 {[0, 72, 144, 216, 288].map((a) => (
@@ -128,12 +131,12 @@ function Accessory({ id }: { id: AccessoryId }) {
                     cx={x + 7 * Math.cos((a * Math.PI) / 180)}
                     cy={y + 7 * Math.sin((a * Math.PI) / 180)}
                     r={5}
-                    fill={Palette.white}
+                    fill={petal}
                     stroke={Palette.ink}
                     strokeWidth={2}
                   />
                 ))}
-                <Circle cx={x} cy={y} r={3.5} fill={Palette.ink} />
+                <Circle cx={x} cy={y} r={3.5} fill={Tint.sun} stroke={Palette.ink} strokeWidth={1.5} />
               </G>
             );
           })}
@@ -142,9 +145,11 @@ function Accessory({ id }: { id: AccessoryId }) {
     case 'hat':
       return (
         <G>
-          <Path d="M136 86 L172 26 L194 82 Z" fill={Palette.white} {...ink} />
-          <Path d="M148 66 L182 58 M141 78 L188 68" {...ink} strokeWidth={2.5} />
-          <Circle cx={172} cy={24} r={8} fill={Palette.ink} />
+          <Path d="M136 86 L172 26 L194 82 Z" fill={Tint.lilac} {...ink} />
+          <Path d="M148 66 L182 58 M141 78 L188 68" stroke={Tint.sun} strokeWidth={6} strokeLinecap="round" />
+          <Path d="M148 66 L182 58 M141 78 L188 68" {...ink} strokeWidth={2} />
+          <Path d="M136 86 L172 26 L194 82 Z" fill="none" {...ink} />
+          <Circle cx={172} cy={24} r={8} fill={Tint.rose} {...ink} strokeWidth={3} />
         </G>
       );
   }
